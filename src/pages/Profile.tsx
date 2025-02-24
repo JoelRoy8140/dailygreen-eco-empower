@@ -1,9 +1,10 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -30,7 +31,7 @@ export default function Profile() {
     try {
       setIsSubmitting(true);
       const { error } = await supabase
-        .from('feedback')
+        .from('Feedback')
         .insert([{ content: feedback }]);
 
       if (error) throw error;
