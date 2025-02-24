@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +24,7 @@ const App = () => (
             <Route path="/guides" element={<div>Guides Coming Soon</div>} />
             <Route path="/map" element={<div>Impact Map Coming Soon</div>} />
             <Route path="/community" element={<div>Community Coming Soon</div>} />
-            <Route path="/profile" element={<div>Profile Coming Soon</div>} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
