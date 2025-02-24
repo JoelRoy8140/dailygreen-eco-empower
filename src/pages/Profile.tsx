@@ -1,8 +1,11 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/sonner";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   User,
   Settings,
@@ -11,9 +14,37 @@ import {
   LogOut,
   Camera,
   Edit,
+  MessageSquare,
 } from "lucide-react";
 
 export default function Profile() {
+  const [feedback, setFeedback] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedback.trim()) {
+      toast.error("Please enter your feedback");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const { error } = await supabase
+        .from('feedback')
+        .insert([{ content: feedback }]);
+
+      if (error) throw error;
+
+      toast.success("Thank you for your feedback!");
+      setFeedback("");
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast.error("Failed to submit feedback. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <header className="text-center mb-12">
@@ -127,6 +158,28 @@ export default function Profile() {
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6 glass-card">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-sage-600" />
+              Send Feedback
+            </h3>
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Share your thoughts, suggestions, or report issues..."
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <Button 
+                onClick={handleFeedbackSubmit} 
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Feedback"}
               </Button>
             </div>
           </Card>
