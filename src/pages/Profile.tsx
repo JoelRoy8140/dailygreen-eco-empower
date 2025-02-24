@@ -31,7 +31,7 @@ export default function Profile() {
     try {
       setIsSubmitting(true);
       const { error } = await supabase
-        .from('Feedback')
+        .from('feedback')
         .insert([{ content: feedback }]);
 
       if (error) throw error;
