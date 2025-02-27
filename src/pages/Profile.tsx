@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import {
   User,
   Settings,
@@ -16,9 +18,11 @@ import {
   Camera,
   Edit,
   MessageSquare,
+  LogIn,
 } from "lucide-react";
 
 export default function Profile() {
+  const { user, isLoading } = useAuth();
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,6 +50,39 @@ export default function Profile() {
     }
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-700 mx-auto"></div>
+          <p className="mt-4 text-sage-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto mt-12 text-center">
+        <Card className="p-8">
+          <User className="h-16 w-16 text-sage-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Sign In Required</h2>
+          <p className="text-sage-600 mb-6">
+            Please sign in to view and manage your profile.
+          </p>
+          <Button asChild>
+            <Link to="/auth">
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Link>
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <header className="text-center mb-12">
@@ -59,7 +96,7 @@ export default function Profile() {
             <div className="relative inline-block">
               <div className="w-24 h-24 rounded-full bg-sage-100 mx-auto mb-4 relative overflow-hidden">
                 <img
-                  src="/placeholder.svg"
+                  src={user.user_metadata?.avatar_url || "/placeholder.svg"}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -74,8 +111,12 @@ export default function Profile() {
                 </div>
               </div>
             </div>
-            <h2 className="text-xl font-semibold mb-1">Guest User</h2>
-            <p className="text-sm text-sage-600 mb-4">San Francisco, CA</p>
+            <h2 className="text-xl font-semibold mb-1">
+              {user.user_metadata?.name || user.email || "User"}
+            </h2>
+            <p className="text-sm text-sage-600 mb-4">
+              {user.email}
+            </p>
             <Button variant="outline" size="sm" className="w-full">
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -124,13 +165,13 @@ export default function Profile() {
                 <label className="text-sm font-medium mb-1 block">
                   Display Name
                 </label>
-                <Input defaultValue="Guest User" />
+                <Input defaultValue={user.user_metadata?.name || ""} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">
                   Email Address
                 </label>
-                <Input defaultValue="guest@example.com" />
+                <Input defaultValue={user.email || ""} readOnly />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Location</label>
@@ -156,6 +197,7 @@ export default function Profile() {
               <Button
                 variant="outline"
                 className="w-full justify-start text-red-600 hover:text-red-700"
+                onClick={() => supabase.auth.signOut()}
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
