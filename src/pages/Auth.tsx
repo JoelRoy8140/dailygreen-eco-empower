@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock, User, AlertCircle, Github, Google } from "lucide-react";
+import { Mail, Lock, User, AlertCircle, ExternalLink } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -183,7 +183,7 @@ export default function Auth() {
                 className="w-full"
                 disabled={loading}
               >
-                <Google className="mr-2 h-4 w-4" />
+                <ExternalLink className="mr-2 h-4 w-4" />
                 Google
               </Button>
             </form>
@@ -250,7 +250,7 @@ export default function Auth() {
                 className="w-full"
                 disabled={loading}
               >
-                <Google className="mr-2 h-4 w-4" />
+                <ExternalLink className="mr-2 h-4 w-4" />
                 Google
               </Button>
             </form>
