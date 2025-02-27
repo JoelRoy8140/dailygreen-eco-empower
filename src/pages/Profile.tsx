@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Link } from "react-router-dom";
+import PasswordChangeModal from "@/components/PasswordChangeModal";
 import {
   User,
   Settings,
@@ -24,10 +26,16 @@ import {
   X,
   Moon,
   Sun,
+  Key,
+  Shield,
+  RefreshCw,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 
 export default function Profile() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -38,11 +46,11 @@ export default function Profile() {
     emailNotifications: true,
     pushNotifications: true,
     dailyDigest: false,
-    theme: "light",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile"); // profile, notifications, account
   const fileInputRef = useRef(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Fetch profile data
   useEffect(() => {
@@ -66,7 +74,6 @@ export default function Profile() {
             emailNotifications: data.email_notifications,
             pushNotifications: data.push_notifications,
             dailyDigest: data.daily_digest,
-            theme: data.theme || "light",
           });
         }
       } catch (error) {
@@ -164,7 +171,6 @@ export default function Profile() {
           email_notifications: profileData.emailNotifications,
           push_notifications: profileData.pushNotifications,
           daily_digest: profileData.dailyDigest,
-          theme: profileData.theme,
         })
         .eq('id', user.id);
       
@@ -188,13 +194,28 @@ export default function Profile() {
     }));
   };
 
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        const { error } = await supabase.auth.admin.deleteUser(user.id);
+        if (error) throw error;
+        
+        await signOut();
+        toast.success("Your account has been deleted");
+      } catch (error) {
+        console.error("Error deleting account:", error);
+        toast.error("Failed to delete account. Please try again.");
+      }
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-700 mx-auto"></div>
-          <p className="mt-4 text-sage-600">Loading profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading profile...</p>
         </div>
       </div>
     );
@@ -205,9 +226,9 @@ export default function Profile() {
     return (
       <div className="max-w-md mx-auto mt-12 text-center">
         <Card className="p-8">
-          <User className="h-16 w-16 text-sage-400 mx-auto mb-4" />
+          <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Sign In Required</h2>
-          <p className="text-sage-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             Please sign in to view and manage your profile.
           </p>
           <Button asChild>
@@ -224,15 +245,15 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8">
       <header className="text-center mb-12">
-        <h1 className="text-3xl font-bold text-sage-900">Profile</h1>
-        <p className="text-sage-600">Manage your account and view your impact</p>
+        <h1 className="text-3xl font-bold">Profile</h1>
+        <p className="text-muted-foreground">Manage your account and view your impact</p>
       </header>
 
       <div className="grid gap-8 md:grid-cols-[300px_1fr]">
         <aside className="space-y-6">
           <Card className="p-6 text-center glass-card">
             <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-full bg-sage-100 mx-auto mb-4 relative overflow-hidden">
+              <div className="w-24 h-24 rounded-full bg-secondary mx-auto mb-4 relative overflow-hidden">
                 <img
                   src={profileData.avatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"}
                   alt="Profile"
@@ -256,7 +277,7 @@ export default function Profile() {
                 />
               </div>
               <div className="absolute -top-1 -right-1">
-                <div className="bg-sage-100 text-sage-600 rounded-full p-1">
+                <div className="bg-secondary text-secondary-foreground rounded-full p-1">
                   <Trophy className="w-4 h-4" />
                 </div>
               </div>
@@ -264,7 +285,7 @@ export default function Profile() {
             <h2 className="text-xl font-semibold mb-1">
               {profileData.displayName || user.user_metadata?.name || user.email?.split('@')[0] || "User"}
             </h2>
-            <p className="text-sm text-sage-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {user.email}
             </p>
             <Button 
@@ -283,7 +304,7 @@ export default function Profile() {
 
           <Card className="p-6 glass-card">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-sage-600" />
+              <Trophy className="w-4 h-4 text-muted-foreground" />
               Achievements
             </h3>
             <div className="space-y-4">
@@ -346,7 +367,7 @@ export default function Profile() {
             <Card className="p-6 glass-card">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <User className="w-4 h-4 text-sage-600" />
+                  <User className="w-4 h-4 text-muted-foreground" />
                   Personal Information
                 </h3>
                 {isEditing ? (
@@ -390,7 +411,7 @@ export default function Profile() {
                     value={profileData.displayName} 
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
+                    className={!isEditing ? "bg-muted" : ""}
                   />
                 </div>
                 <div>
@@ -400,7 +421,7 @@ export default function Profile() {
                   <Input 
                     value={user.email || ""} 
                     readOnly 
-                    className="bg-gray-50"
+                    className="bg-muted"
                   />
                 </div>
                 <div>
@@ -412,7 +433,7 @@ export default function Profile() {
                     value={profileData.location} 
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
+                    className={!isEditing ? "bg-muted" : ""}
                     placeholder="e.g. San Francisco, CA"
                   />
                 </div>
@@ -424,7 +445,7 @@ export default function Profile() {
             <Card className="p-6 glass-card">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-sage-600" />
+                  <Bell className="w-4 h-4 text-muted-foreground" />
                   Notification Settings
                 </h3>
                 {isEditing ? (
@@ -462,7 +483,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium">Email Notifications</h4>
-                    <p className="text-sm text-sage-600">Receive updates and reminders via email</p>
+                    <p className="text-sm text-muted-foreground">Receive updates and reminders via email</p>
                   </div>
                   <Switch 
                     name="emailNotifications"
@@ -474,7 +495,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium">Push Notifications</h4>
-                    <p className="text-sm text-sage-600">Receive notifications on your device</p>
+                    <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
                   </div>
                   <Switch 
                     name="pushNotifications"
@@ -486,7 +507,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium">Daily Digest</h4>
-                    <p className="text-sm text-sage-600">Receive a daily summary of your activities</p>
+                    <p className="text-sm text-muted-foreground">Receive a daily summary of your activities</p>
                   </div>
                   <Switch 
                     name="dailyDigest"
@@ -503,79 +524,82 @@ export default function Profile() {
             <Card className="p-6 glass-card">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-sage-600" />
+                  <Settings className="w-4 h-4 text-muted-foreground" />
                   Account Settings
                 </h3>
-                {isEditing ? (
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setIsEditing(false)}
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      onClick={saveProfile}
-                      disabled={isSubmitting}
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      {isSubmitting ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                )}
               </div>
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Theme Preference</h4>
-                    <p className="text-sm text-sage-600">Choose between light and dark mode</p>
-                  </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Key className="w-4 h-4" />
+                    Theme Preference
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">Choose between light and dark mode</p>
                   <div className="flex items-center space-x-2">
                     <Button 
-                      variant={profileData.theme === "light" ? "default" : "outline"}
+                      variant={theme === "light" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => isEditing && setProfileData(prev => ({...prev, theme: "light"}))}
-                      disabled={!isEditing}
+                      onClick={() => setTheme("light")}
                     >
                       <Sun className="h-4 w-4 mr-1" />
                       Light
                     </Button>
                     <Button 
-                      variant={profileData.theme === "dark" ? "default" : "outline"}
+                      variant={theme === "dark" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => isEditing && setProfileData(prev => ({...prev, theme: "dark"}))}
-                      disabled={!isEditing}
+                      onClick={() => setTheme("dark")}
                     >
                       <Moon className="h-4 w-4 mr-1" />
                       Dark
                     </Button>
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-2">Account Security</h4>
-                  <Button variant="outline" className="w-full mb-2">
-                    Change Password
-                  </Button>
+                
+                <div className="space-y-2 border-t pt-4">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Security
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">Manage your account security settings</p>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start text-red-600 hover:text-red-700"
-                    onClick={() => supabase.auth.signOut()}
+                    className="w-full justify-start"
+                    onClick={() => setIsPasswordModalOpen(true)}
+                  >
+                    <Key className="w-4 h-4 mr-2" />
+                    Change Password
+                  </Button>
+                </div>
+                
+                <div className="space-y-2 border-t pt-4">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Sessions
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">Manage your active sessions</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => signOut()}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
+                    Sign Out of All Devices
+                  </Button>
+                </div>
+                
+                <div className="space-y-2 border-t pt-4">
+                  <h4 className="font-medium flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-4 h-4" />
+                    Danger Zone
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-2">Permanently delete your account and all your data</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={handleDeleteAccount}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Account
                   </Button>
                 </div>
               </div>
@@ -584,7 +608,7 @@ export default function Profile() {
 
           <Card className="p-6 glass-card">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-sage-600" />
+              <MessageSquare className="w-4 h-4 text-muted-foreground" />
               Send Feedback
             </h3>
             <div className="space-y-4">
@@ -605,6 +629,11 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+      
+      <PasswordChangeModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+      />
     </div>
   );
 }
