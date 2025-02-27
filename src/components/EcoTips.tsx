@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Search, ArrowRight, Leaf, Droplet, Zap, ShoppingBag, Recycle, Car, Home, Tree, Globe, ExternalLink } from "lucide-react";
+import { Search, ArrowRight, Leaf, Droplet, Zap, ShoppingBag, Recycle, Car, Home, Trees, Globe, ExternalLink } from "lucide-react";
 
 // Eco tips data organized by categories
 const tipCategories = [
@@ -539,7 +539,7 @@ export function EcoTips() {
           {favorites.length} tips saved to favorites
         </div>
         <Button variant="outline" size="sm">
-          <Tree className="mr-2 h-4 w-4" />
+          <Leaf className="mr-2 h-4 w-4" />
           View All Guides
         </Button>
       </CardFooter>
