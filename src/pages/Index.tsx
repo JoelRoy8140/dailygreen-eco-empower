@@ -247,7 +247,7 @@ const Index = () => {
 
               <section>
                 <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200 flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-primary" />
+                  <Award className="h-5 w-5 text-primary" />
                   Community Leaders
                 </h2>
                 <Card className="glass-card">
