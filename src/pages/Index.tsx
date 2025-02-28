@@ -11,7 +11,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Droplet, Leaf, Award, Clock, Calendar, TrendingUp, LineChart, Users, Globe, CheckCircle2 } from "lucide-react";
+import { Zap, Droplet, Leaf, Award, Clock, Calendar, TrendingUp, LineChart, Users, Globe, CheckCircle2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -32,6 +32,14 @@ const Index = () => {
   // Favorites and achievements
   const [favoriteAchievements, setFavoriteAchievements] = useState<number[]>([1, 3]);
   const [upcomingEventsInterest, setUpcomingEventsInterest] = useState<number[]>([]);
+
+  // UI animations
+  const [animate, setAnimate] = useState(false);
+
+  // Trigger animations on load
+  useEffect(() => {
+    setAnimate(true);
+  }, []);
 
   // Simulate loading progress values with animation
   useEffect(() => {
@@ -174,21 +182,33 @@ const Index = () => {
 
   return (
     <>
-      <header className="text-center mb-10 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight text-sage-900 dark:text-sage-50">
-          DailyGreen
-        </h1>
+      <div className="absolute top-0 left-0 w-full h-screen -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-sage-50/80 to-sage-100/90 dark:from-sage-900/90 dark:to-earth-800/95 backdrop-blur-sm"></div>
+        <img 
+          src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
+          alt="Background" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <header className={`text-center mb-10 space-y-4 pt-8 transition-all duration-700 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8'}`}>
+        <div className="relative inline-block">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-sage-900 dark:text-sage-50">
+            DailyGreen
+          </h1>
+          <Sparkles className="absolute -top-6 -right-8 h-6 w-6 text-amber-500 animate-pulse" />
+        </div>
         <p className="text-lg text-sage-600 dark:text-sage-300 max-w-2xl mx-auto">
           Small actions, big impact. Join our community in making sustainable
           choices every day.
         </p>
         {user && (
           <div className="mt-4 flex items-center justify-center gap-4">
-            <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1">
+            <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1 hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
               <Clock className="h-3.5 w-3.5 mr-1" />
               {streakCount} Day Streak
             </Badge>
-            <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1">
+            <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1 hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
               <Users className="h-3.5 w-3.5 mr-1" />
               Rank #{userRank} of {totalUsers}
             </Badge>
@@ -198,9 +218,9 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto space-y-8 pb-12">
         {user && (
-          <section className="mb-12">
+          <section className={`mb-12 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="grid gap-6 md:grid-cols-4">
-              <Card className="col-span-3 glass-card">
+              <Card className="col-span-3 glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
@@ -228,13 +248,13 @@ const Index = () => {
                       {Array.from({ length: 7 }).map((_, i) => (
                         <div 
                           key={i} 
-                          className={`h-10 rounded-md flex items-center justify-center ${
+                          className={`h-10 rounded-md flex items-center justify-center transition-all duration-300 ${
                             i < tasksCompleted 
                               ? 'bg-primary/20 border border-primary/30' 
                               : 'bg-background/50 border border-border'
                           }`}
                         >
-                          {i < tasksCompleted && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                          {i < tasksCompleted && <CheckCircle2 className="h-5 w-5 text-primary animate-scale-in" />}
                         </div>
                       ))}
                     </div>
@@ -243,7 +263,7 @@ const Index = () => {
                       <Button 
                         onClick={handleCompleteTask}
                         variant="outline" 
-                        className="w-full mt-2"
+                        className="w-full mt-2 hover-scale"
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
                         Log Completed Task
@@ -251,7 +271,7 @@ const Index = () => {
                     )}
                     
                     {tasksCompleted >= weeklyGoal && (
-                      <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded-md text-center mt-2">
+                      <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded-md text-center mt-2 animate-pulse">
                         <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />
                         Weekly goal achieved! Great job!
                       </div>
@@ -260,7 +280,7 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="glass-card">
+              <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-all">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-primary" />
@@ -273,7 +293,7 @@ const Index = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {weeklyStats.map((stat, i) => (
-                      <div key={i} className="flex justify-between items-center">
+                      <div key={i} className="flex justify-between items-center p-2 hover:bg-sage-50/50 dark:hover:bg-sage-800/20 rounded-md transition-colors">
                         <span className="text-sm text-muted-foreground">{stat.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{stat.value}</span>
@@ -290,14 +310,14 @@ const Index = () => {
           </section>
         )}
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 transition-all duration-700 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <section className="lg:col-span-2">
             <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
               Today's Challenge
             </h2>
-            <Card className="w-full max-w-md mx-auto glass-card p-6 animate-fade-up">
+            <Card className="w-full max-w-md mx-auto glass-card p-6 animate-fade-up border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex flex-col items-center space-y-4">
-                <div className="rounded-full bg-sage-100 p-3">
+                <div className="rounded-full bg-sage-100 p-3 animate-pulse">
                   <Leaf className="w-6 h-6 text-sage-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-center">Skip Plastic Today</h3>
@@ -310,7 +330,7 @@ const Index = () => {
                 <Button
                   onClick={handleChallengeComplete}
                   disabled={challengeCompleted}
-                  className="w-full bg-sage-600 hover:bg-sage-700 text-white"
+                  className="w-full bg-sage-600 hover:bg-sage-700 text-white transition-transform hover:scale-105"
                 >
                   {challengeCompleted ? "Completed!" : "Complete Challenge"}
                 </Button>
@@ -323,12 +343,16 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
                 Recent Achievements
               </h2>
-              <Card className="glass-card overflow-hidden">
+              <Card className="glass-card overflow-hidden border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
                 <ScrollArea className="h-[330px]">
                   <div className="p-2">
-                    {recentAchievements.map((achievement) => (
-                      <div key={achievement.id} className="p-3 flex gap-4 hover:bg-background/40 rounded-lg transition-colors">
-                        <div className="shrink-0">
+                    {recentAchievements.map((achievement, idx) => (
+                      <div 
+                        key={achievement.id} 
+                        className="p-3 flex gap-4 hover:bg-background/40 rounded-lg transition-colors"
+                        style={{ animationDelay: `${idx * 150}ms` }}
+                      >
+                        <div className="shrink-0 animate-pulse">
                           {achievement.icon}
                         </div>
                         <div className="flex-1">
@@ -339,7 +363,7 @@ const Index = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 rounded-full"
+                          className="h-8 w-8 p-0 rounded-full hover:scale-110 transition-transform"
                           onClick={() => toggleFavoriteAchievement(achievement.id)}
                         >
                           {favoriteAchievements.includes(achievement.id) ? (
@@ -353,7 +377,7 @@ const Index = () => {
                   </div>
                 </ScrollArea>
                 <CardFooter className="border-t px-4 py-3 bg-card/50">
-                  <Button variant="ghost" size="sm" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
                     View All Achievements
                   </Button>
                 </CardFooter>
@@ -362,14 +386,14 @@ const Index = () => {
           )}
         </div>
 
-        <section className="mt-16">
+        <section className={`mt-16 transition-all duration-700 delay-300 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
             Your Impact
           </h2>
           <ImpactMetrics />
         </section>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-16">
+        <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-16 transition-all duration-700 delay-400 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {user && (
             <>
               <section className="lg:col-span-2">
@@ -377,11 +401,15 @@ const Index = () => {
                   <Calendar className="h-5 w-5 text-primary" />
                   Upcoming Events
                 </h2>
-                <Card className="glass-card">
+                <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
                   <CardContent className="p-0">
                     <div className="divide-y">
-                      {upcomingEvents.map((event) => (
-                        <div key={event.id} className="p-4 hover:bg-background/40 transition-colors">
+                      {upcomingEvents.map((event, idx) => (
+                        <div 
+                          key={event.id} 
+                          className="p-4 hover:bg-background/40 transition-colors" 
+                          style={{ animationDelay: `${idx * 150}ms` }}
+                        >
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-medium">{event.title}</h3>
@@ -401,7 +429,7 @@ const Index = () => {
                               variant={upcomingEventsInterest.includes(event.id) ? "default" : "outline"}
                               size="sm"
                               onClick={() => toggleEventInterest(event.id)}
-                              className="mt-1"
+                              className={`mt-1 transition-all duration-300 ${upcomingEventsInterest.includes(event.id) ? 'animate-pulse' : ''}`}
                             >
                               {upcomingEventsInterest.includes(event.id) ? "Interested" : "Mark Interest"}
                             </Button>
@@ -411,7 +439,7 @@ const Index = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="border-t p-3">
-                    <Button variant="ghost" size="sm" className="w-full">
+                    <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
                       View All Events
                     </Button>
                   </CardFooter>
@@ -423,11 +451,15 @@ const Index = () => {
                   <Award className="h-5 w-5 text-primary" />
                   Community Leaders
                 </h2>
-                <Card className="glass-card">
+                <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
                   <CardContent className="p-0">
                     <div className="divide-y">
                       {leaderboard.map((user, index) => (
-                        <div key={user.id} className="p-3 flex items-center gap-3 hover:bg-background/40 transition-colors">
+                        <div 
+                          key={user.id} 
+                          className="p-3 flex items-center gap-3 hover:bg-background/40 transition-colors"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
                           <div className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary font-medium text-sm">
                             {index + 1}
                           </div>
@@ -450,7 +482,7 @@ const Index = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full"
+                      className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors"
                       onClick={() => {
                         toast({
                           title: "Leaderboard",
@@ -467,7 +499,7 @@ const Index = () => {
           )}
         </div>
 
-        <section className="mt-16">
+        <section className={`mt-16 transition-all duration-700 delay-500 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
             Sustainability Guide
           </h2>
