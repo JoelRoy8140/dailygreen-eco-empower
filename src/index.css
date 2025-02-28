@@ -59,7 +59,7 @@
   }
   
   .glass-card {
-    @apply backdrop-blur-sm bg-white/10 border border-white/10 shadow-md dark:bg-black/20 dark:border-white/5;
+    @apply backdrop-blur-sm bg-white/25 border border-white/20 shadow-md dark:bg-black/30 dark:border-white/10;
   }
 }
 

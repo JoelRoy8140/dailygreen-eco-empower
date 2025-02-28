@@ -183,11 +183,13 @@ const Index = () => {
   return (
     <>
       <div className="absolute top-0 left-0 w-full h-screen -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-sage-50/80 to-sage-100/90 dark:from-sage-900/90 dark:to-earth-800/95 backdrop-blur-sm"></div>
+        {/* Updated background overlay with better contrast */}
+        <div className="absolute inset-0 bg-gradient-to-br from-sage-50/95 to-sage-200/95 dark:from-sage-900 dark:to-earth-900 backdrop-blur-[2px]"></div>
+        {/* New background image with better contrast and visibility */}
         <img 
-          src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
+          src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
           alt="Background" 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-40 dark:opacity-30"
         />
       </div>
 
