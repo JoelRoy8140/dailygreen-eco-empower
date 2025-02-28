@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { DailyChallenge } from "@/components/DailyChallenge";
 import { ImpactMetrics } from "@/components/ImpactMetrics";
 import { EcoTips } from "@/components/EcoTips";
+import { TaskHistory } from "@/components/TaskHistory";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,9 @@ const Index = () => {
 
   // UI animations
   const [animate, setAnimate] = useState(false);
+  
+  // Active Tab
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Trigger animations on load
   useEffect(() => {
@@ -220,293 +223,314 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto space-y-8 pb-12">
         {user && (
-          <section className={`mb-12 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="grid gap-6 md:grid-cols-4">
-              <Card className="col-span-3 glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    Weekly Progress
-                  </CardTitle>
-                  <CardDescription>
-                    Complete eco-challenges to reach your weekly goal
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <span className="text-3xl font-bold">{tasksCompleted}</span>
-                        <span className="text-muted-foreground text-lg">/{weeklyGoal}</span>
-                        <p className="text-sm text-muted-foreground">tasks completed this week</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-medium text-primary">{Math.round((tasksCompleted / weeklyGoal) * 100)}%</span>
-                        <p className="text-xs text-muted-foreground">toward weekly goal</p>
-                      </div>
-                    </div>
-                    <Progress value={(tasksCompleted / weeklyGoal) * 100} className="h-2" />
-                    <div className="grid grid-cols-7 gap-1 mt-4">
-                      {Array.from({ length: 7 }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`h-10 rounded-md flex items-center justify-center transition-all duration-300 ${
-                            i < tasksCompleted 
-                              ? 'bg-primary/20 border border-primary/30' 
-                              : 'bg-background/50 border border-border'
-                          }`}
-                        >
-                          {i < tasksCompleted && <CheckCircle2 className="h-5 w-5 text-primary animate-scale-in" />}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {tasksCompleted < weeklyGoal && (
-                      <Button 
-                        onClick={handleCompleteTask}
-                        variant="outline" 
-                        className="w-full mt-2 hover-scale"
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Log Completed Task
-                      </Button>
-                    )}
-                    
-                    {tasksCompleted >= weeklyGoal && (
-                      <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded-md text-center mt-2 animate-pulse">
-                        <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />
-                        Weekly goal achieved! Great job!
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-all">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Stats
-                  </CardTitle>
-                  <CardDescription>
-                    Weekly eco-impact
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {weeklyStats.map((stat, i) => (
-                      <div key={i} className="flex justify-between items-center p-2 hover:bg-sage-50/50 dark:hover:bg-sage-800/20 rounded-md transition-colors">
-                        <span className="text-sm text-muted-foreground">{stat.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{stat.value}</span>
-                          <span className={`text-xs ${stat.color}`}>
-                            {stat.change}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full mb-6"
+          >
+            <div className="flex justify-center mb-4">
+              <TabsList className="grid grid-cols-2 w-full max-w-md">
+                <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                  <LineChart className="h-4 w-4" />
+                  Dashboard
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Task History
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </section>
-        )}
-
-        <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 transition-all duration-700 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <section className="lg:col-span-2">
-            <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
-              Today's Challenge
-            </h2>
-            <Card className="w-full max-w-md mx-auto glass-card p-6 animate-fade-up border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="rounded-full bg-sage-100 p-3 animate-pulse">
-                  <Leaf className="w-6 h-6 text-sage-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-center">Skip Plastic Today</h3>
-                <p className="text-muted-foreground text-center">
-                  Avoid single-use plastics for the next 24 hours
-                </p>
-                <div className="text-sm font-medium text-sage-600 bg-sage-50 px-3 py-1 rounded-full">
-                  Saves ~0.5kg CO2
-                </div>
-                <Button
-                  onClick={handleChallengeComplete}
-                  disabled={challengeCompleted}
-                  className="w-full bg-sage-600 hover:bg-sage-700 text-white transition-transform hover:scale-105"
-                >
-                  {challengeCompleted ? "Completed!" : "Complete Challenge"}
-                </Button>
-              </div>
-            </Card>
-          </section>
-
-          {user && (
-            <section>
-              <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
-                Recent Achievements
-              </h2>
-              <Card className="glass-card overflow-hidden border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
-                <ScrollArea className="h-[330px]">
-                  <div className="p-2">
-                    {recentAchievements.map((achievement, idx) => (
-                      <div 
-                        key={achievement.id} 
-                        className="p-3 flex gap-4 hover:bg-background/40 rounded-lg transition-colors"
-                        style={{ animationDelay: `${idx * 150}ms` }}
-                      >
-                        <div className="shrink-0 animate-pulse">
-                          {achievement.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{achievement.title}</h3>
-                          <p className="text-sm text-muted-foreground">{achievement.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{achievement.date}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 rounded-full hover:scale-110 transition-transform"
-                          onClick={() => toggleFavoriteAchievement(achievement.id)}
-                        >
-                          {favoriteAchievements.includes(achievement.id) ? (
-                            <span className="text-amber-500">★</span>
-                          ) : (
-                            <span className="text-muted-foreground">☆</span>
-                          )}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-                <CardFooter className="border-t px-4 py-3 bg-card/50">
-                  <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
-                    View All Achievements
-                  </Button>
-                </CardFooter>
-              </Card>
-            </section>
-          )}
-        </div>
-
-        <section className={`mt-16 transition-all duration-700 delay-300 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
-            Your Impact
-          </h2>
-          <ImpactMetrics />
-        </section>
-
-        <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-16 transition-all duration-700 delay-400 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          {user && (
-            <>
-              <section className="lg:col-span-2">
-                <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Upcoming Events
-                </h2>
-                <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {upcomingEvents.map((event, idx) => (
-                        <div 
-                          key={event.id} 
-                          className="p-4 hover:bg-background/40 transition-colors" 
-                          style={{ animationDelay: `${idx * 150}ms` }}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">{event.title}</h3>
-                              <p className="text-sm text-muted-foreground">{event.description}</p>
-                              <div className="flex items-center gap-4 mt-2 text-xs">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                                  <span>{event.date}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Globe className="h-3.5 w-3.5 text-primary" />
-                                  <span>{event.location}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              variant={upcomingEventsInterest.includes(event.id) ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => toggleEventInterest(event.id)}
-                              className={`mt-1 transition-all duration-300 ${upcomingEventsInterest.includes(event.id) ? 'animate-pulse' : ''}`}
-                            >
-                              {upcomingEventsInterest.includes(event.id) ? "Interested" : "Mark Interest"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t p-3">
-                    <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
-                      View All Events
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </section>
-
-              <section>
-                <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200 flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  Community Leaders
-                </h2>
-                <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {leaderboard.map((user, index) => (
-                        <div 
-                          key={user.id} 
-                          className="p-3 flex items-center gap-3 hover:bg-background/40 transition-colors"
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                          <div className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary font-medium text-sm">
-                            {index + 1}
-                          </div>
-                          <div className="h-8 w-8 rounded-full overflow-hidden">
-                            <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{user.name}</h3>
-                            <p className="text-xs text-muted-foreground">{user.tasks} tasks</p>
+            
+            <TabsContent value="dashboard" className="space-y-8">
+              <section className={`mb-12 transition-all duration-700 delay-100 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <div className="grid gap-6 md:grid-cols-4">
+                  <Card className="col-span-3 glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        Weekly Progress
+                      </CardTitle>
+                      <CardDescription>
+                        Complete eco-challenges to reach your weekly goal
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <span className="text-3xl font-bold">{tasksCompleted}</span>
+                            <span className="text-muted-foreground text-lg">/{weeklyGoal}</span>
+                            <p className="text-sm text-muted-foreground">tasks completed this week</p>
                           </div>
                           <div className="text-right">
-                            <span className="font-semibold">{user.points}</span>
-                            <p className="text-xs text-muted-foreground">points</p>
+                            <span className="text-sm font-medium text-primary">{Math.round((tasksCompleted / weeklyGoal) * 100)}%</span>
+                            <p className="text-xs text-muted-foreground">toward weekly goal</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t p-3">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors"
-                      onClick={() => {
-                        toast({
-                          title: "Leaderboard",
-                          description: "Full leaderboard will be available soon!",
-                        });
-                      }}
-                    >
-                      View Leaderboard
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </section>
-            </>
-          )}
-        </div>
+                        <Progress value={(tasksCompleted / weeklyGoal) * 100} className="h-2" />
+                        <div className="grid grid-cols-7 gap-1 mt-4">
+                          {Array.from({ length: 7 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`h-10 rounded-md flex items-center justify-center transition-all duration-300 ${
+                                i < tasksCompleted 
+                                  ? 'bg-primary/20 border border-primary/30' 
+                                  : 'bg-background/50 border border-border'
+                              }`}
+                            >
+                              {i < tasksCompleted && <CheckCircle2 className="h-5 w-5 text-primary animate-scale-in" />}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {tasksCompleted < weeklyGoal && (
+                          <Button 
+                            onClick={handleCompleteTask}
+                            variant="outline" 
+                            className="w-full mt-2 hover-scale"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Log Completed Task
+                          </Button>
+                        )}
+                        
+                        {tasksCompleted >= weeklyGoal && (
+                          <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded-md text-center mt-2 animate-pulse">
+                            <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />
+                            Weekly goal achieved! Great job!
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-        <section className={`mt-16 transition-all duration-700 delay-500 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
-            Sustainability Guide
-          </h2>
-          <EcoTips />
-        </section>
+                  <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-all">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        Stats
+                      </CardTitle>
+                      <CardDescription>
+                        Weekly eco-impact
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {weeklyStats.map((stat, i) => (
+                          <div key={i} className="flex justify-between items-center p-2 hover:bg-sage-50/50 dark:hover:bg-sage-800/20 rounded-md transition-colors">
+                            <span className="text-sm text-muted-foreground">{stat.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{stat.value}</span>
+                              <span className={`text-xs ${stat.color}`}>
+                                {stat.change}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </section>
+
+              <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 transition-all duration-700 delay-200 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <section className="lg:col-span-2">
+                  <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
+                    Today's Challenge
+                  </h2>
+                  <DailyChallenge />
+                </section>
+
+                <section>
+                  <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
+                    Recent Achievements
+                  </h2>
+                  <Card className="glass-card overflow-hidden border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
+                    <ScrollArea className="h-[330px]">
+                      <div className="p-2">
+                        {recentAchievements.map((achievement, idx) => (
+                          <div 
+                            key={achievement.id} 
+                            className="p-3 flex gap-4 hover:bg-background/40 rounded-lg transition-colors"
+                            style={{ animationDelay: `${idx * 150}ms` }}
+                          >
+                            <div className="shrink-0 animate-pulse">
+                              {achievement.icon}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium">{achievement.title}</h3>
+                              <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{achievement.date}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 rounded-full hover:scale-110 transition-transform"
+                              onClick={() => toggleFavoriteAchievement(achievement.id)}
+                            >
+                              {favoriteAchievements.includes(achievement.id) ? (
+                                <span className="text-amber-500">★</span>
+                              ) : (
+                                <span className="text-muted-foreground">☆</span>
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    <CardFooter className="border-t px-4 py-3 bg-card/50">
+                      <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
+                        View All Achievements
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </section>
+              </div>
+
+              <section className={`mt-16 transition-all duration-700 delay-300 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
+                  Your Impact
+                </h2>
+                <ImpactMetrics />
+              </section>
+
+              <div className={`grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-16 transition-all duration-700 delay-400 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <section className="lg:col-span-2">
+                  <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Upcoming Events
+                  </h2>
+                  <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {upcomingEvents.map((event, idx) => (
+                          <div 
+                            key={event.id} 
+                            className="p-4 hover:bg-background/40 transition-colors" 
+                            style={{ animationDelay: `${idx * 150}ms` }}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium">{event.title}</h3>
+                                <p className="text-sm text-muted-foreground">{event.description}</p>
+                                <div className="flex items-center gap-4 mt-2 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                                    <span>{event.date}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Globe className="h-3.5 w-3.5 text-primary" />
+                                    <span>{event.location}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant={upcomingEventsInterest.includes(event.id) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleEventInterest(event.id)}
+                                className={`mt-1 transition-all duration-300 ${upcomingEventsInterest.includes(event.id) ? 'animate-pulse' : ''}`}
+                              >
+                                {upcomingEventsInterest.includes(event.id) ? "Interested" : "Mark Interest"}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="border-t p-3">
+                      <Button variant="ghost" size="sm" className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors">
+                        View All Events
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </section>
+
+                <section>
+                  <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Community Leaders
+                  </h2>
+                  <Card className="glass-card border-sage-200/20 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {leaderboard.map((user, index) => (
+                          <div 
+                            key={user.id} 
+                            className="p-3 flex items-center gap-3 hover:bg-background/40 transition-colors"
+                            style={{ animationDelay: `${index * 100}ms` }}
+                          >
+                            <div className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary font-medium text-sm">
+                              {index + 1}
+                            </div>
+                            <div className="h-8 w-8 rounded-full overflow-hidden">
+                              <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{user.name}</h3>
+                              <p className="text-xs text-muted-foreground">{user.tasks} tasks</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-semibold">{user.points}</span>
+                              <p className="text-xs text-muted-foreground">points</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="border-t p-3">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full hover:bg-sage-100 dark:hover:bg-sage-800 transition-colors"
+                        onClick={() => {
+                          toast({
+                            title: "Leaderboard",
+                            description: "Full leaderboard will be available soon!",
+                          });
+                        }}
+                      >
+                        View Leaderboard
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </section>
+              </div>
+
+              <section className={`mt-16 transition-all duration-700 delay-500 ${animate ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
+                  Sustainability Guide
+                </h2>
+                <EcoTips />
+              </section>
+            </TabsContent>
+            
+            <TabsContent value="history" className="animate-fade-up">
+              <TaskHistory />
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {!user && (
+          <div>
+            <section className="text-center">
+              <h2 className="text-3xl font-semibold mb-8 text-sage-800 dark:text-sage-200">
+                Join the DailyGreen Community
+              </h2>
+              <p className="text-lg text-sage-600 dark:text-sage-300 max-w-2xl mx-auto mb-12">
+                Track your sustainability efforts, connect with like-minded individuals,
+                and make a real impact on the planet. Sign up or log in to get started!
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button size="lg" className="bg-sage-600 hover:bg-sage-700 text-white hover-scale">
+                  Sign Up
+                </Button>
+                <Button variant="outline" size="lg" className="hover-scale">
+                  Log In
+                </Button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
     </>
   );
