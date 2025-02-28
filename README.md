@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+
 
 ## Project info
 
@@ -8,7 +8,6 @@
 
 There are several ways of editing your application.
 
-**Use Lovable**
 
 Simply visit the [Lovable Project](https://lovable.dev/projects/4f1c55a0-f354-45e4-82ea-eae57a08f35b) and start prompting.
 
@@ -60,7 +59,6 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/4f1c55a0-f354-45e4-82ea-eae57a08f35b) and click on Share -> Publish.
 
