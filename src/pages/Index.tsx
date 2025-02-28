@@ -12,16 +12,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Droplet, Leaf, Award, Clock, Calendar, TrendingUp, LineChart, Users, Globe, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { toast } = useToast();
+  
+  // User stats
   const [streakCount, setStreakCount] = useState(7);
   const [userRank, setUserRank] = useState(124);
   const [totalUsers, setTotalUsers] = useState(2567);
+  
+  // Weekly progress
   const [weeklyProgress, setWeeklyProgress] = useState(0);
   const [weeklyGoal, setWeeklyGoal] = useState(5);
   const [tasksCompleted, setTasksCompleted] = useState(3);
+  
+  // Favorites and achievements
+  const [favoriteAchievements, setFavoriteAchievements] = useState<number[]>([1, 3]);
+  const [upcomingEventsInterest, setUpcomingEventsInterest] = useState<number[]>([]);
 
   // Simulate loading progress values with animation
   useEffect(() => {
@@ -29,37 +39,138 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [tasksCompleted]);
 
+  // Complete a task
+  const handleCompleteTask = () => {
+    if (tasksCompleted < weeklyGoal) {
+      setTasksCompleted(prev => prev + 1);
+      
+      toast({
+        title: "Task Completed!",
+        description: "Great job! You've made progress toward your weekly goal.",
+      });
+      
+      // Randomly increase some stats
+      updateWeeklyStats();
+    }
+  };
+
+  // Update weekly stats when a task is completed
+  const updateWeeklyStats = () => {
+    setWeeklyStats(prev => 
+      prev.map(stat => ({
+        ...stat,
+        value: incrementStatValue(stat.value),
+        change: incrementStatChange(stat.change)
+      }))
+    );
+  };
+
+  // Helper to increment stat values
+  const incrementStatValue = (value: string) => {
+    const [num, unit] = value.split(' ');
+    const newValue = (parseFloat(num) + (Math.random() * 2)).toFixed(1);
+    return `${newValue} ${unit}`;
+  };
+
+  // Helper to increment stat changes
+  const incrementStatChange = (change: string) => {
+    const num = parseFloat(change.replace('+', ''));
+    const newValue = (num + (Math.random() * 0.5)).toFixed(1);
+    return `+${newValue}`;
+  };
+
+  // Toggle favorite achievement
+  const toggleFavoriteAchievement = (id: number) => {
+    if (favoriteAchievements.includes(id)) {
+      setFavoriteAchievements(favoriteAchievements.filter(item => item !== id));
+      toast({
+        title: "Removed from favorites",
+        description: "Achievement removed from your favorites",
+      });
+    } else {
+      setFavoriteAchievements([...favoriteAchievements, id]);
+      toast({
+        title: "Added to favorites",
+        description: "Achievement added to your favorites",
+      });
+    }
+  };
+
+  // Toggle interest in upcoming event
+  const toggleEventInterest = (id: number) => {
+    if (upcomingEventsInterest.includes(id)) {
+      setUpcomingEventsInterest(upcomingEventsInterest.filter(item => item !== id));
+      toast({
+        title: "Interest removed",
+        description: "You're no longer marked as interested in this event",
+      });
+    } else {
+      setUpcomingEventsInterest([...upcomingEventsInterest, id]);
+      toast({
+        title: "Interest added",
+        description: "You're now marked as interested in this event",
+      });
+    }
+  };
+
   // Sample data for recent achievements
-  const recentAchievements = [
+  const [recentAchievements, setRecentAchievements] = useState([
     { id: 1, title: "Sustainability Week", description: "Completed 5 eco-friendly tasks in a week", date: "2 days ago", icon: <Award className="h-8 w-8 text-amber-500" /> },
     { id: 2, title: "Water Saver", description: "Reduced water consumption by 15%", date: "5 days ago", icon: <Droplet className="h-8 w-8 text-blue-500" /> },
     { id: 3, title: "Energy Champion", description: "Saved 20kWh through energy-efficient habits", date: "1 week ago", icon: <Zap className="h-8 w-8 text-yellow-500" /> },
     { id: 4, title: "Tree Planter", description: "Planted your first tree", date: "2 weeks ago", icon: <Leaf className="h-8 w-8 text-green-500" /> },
-  ];
+  ]);
 
   // Sample data for upcoming events
-  const upcomingEvents = [
+  const [upcomingEvents, setUpcomingEvents] = useState([
     { id: 1, title: "Earth Day Cleanup", description: "Join the community cleanup event", date: "April 22", location: "City Park" },
     { id: 2, title: "Sustainable Cooking Workshop", description: "Learn to cook with seasonal ingredients", date: "Next Friday", location: "Community Center" },
     { id: 3, title: "Solar Panel Information Session", description: "Learn about home solar installation", date: "May 5", location: "Virtual Event" },
-  ];
+  ]);
 
   // Sample data for community leaderboard
-  const leaderboard = [
+  const [leaderboard, setLeaderboard] = useState([
     { id: 1, name: "GreenWarrior", points: 1250, tasks: 45, avatar: "https://i.pravatar.cc/150?img=1" },
     { id: 2, name: "EcoChampion", points: 1180, tasks: 41, avatar: "https://i.pravatar.cc/150?img=2" },
     { id: 3, name: "EarthDefender", points: 1050, tasks: 38, avatar: "https://i.pravatar.cc/150?img=3" },
     { id: 4, name: "PlanetProtector", points: 980, tasks: 35, avatar: "https://i.pravatar.cc/150?img=4" },
     { id: 5, name: "SustainableHero", points: 920, tasks: 33, avatar: "https://i.pravatar.cc/150?img=5" },
-  ];
+  ]);
 
   // Weekly eco-impact stats
-  const weeklyStats = [
+  const [weeklyStats, setWeeklyStats] = useState([
     { name: "CO2 Saved", value: "12.4 kg", change: "+2.3", color: "text-green-500" },
     { name: "Water Saved", value: "85 L", change: "+15", color: "text-blue-500" },
     { name: "Energy Reduced", value: "8.2 kWh", change: "+1.4", color: "text-yellow-500" },
     { name: "Waste Diverted", value: "3.1 kg", change: "+0.5", color: "text-purple-500" },
-  ];
+  ]);
+
+  // Show active challenge completion
+  const [challengeCompleted, setChallengeCompleted] = useState(false);
+  
+  // Handle challenge completion
+  const handleChallengeComplete = () => {
+    setChallengeCompleted(true);
+    handleCompleteTask(); // Also counts as a weekly task
+    
+    // Add a new achievement if we reach 5 tasks
+    if (tasksCompleted + 1 >= 5) {
+      const newAchievement = {
+        id: recentAchievements.length + 1,
+        title: "Weekly Goal Achiever",
+        description: "Completed all 5 weekly eco-challenges",
+        date: "Just now",
+        icon: <Award className="h-8 w-8 text-green-500" />
+      };
+      
+      setRecentAchievements([newAchievement, ...recentAchievements]);
+      
+      toast({
+        title: "New Achievement Unlocked!",
+        description: "Weekly Goal Achiever - You've completed your weekly goal!",
+      });
+    }
+  };
 
   return (
     <>
@@ -127,6 +238,24 @@ const Index = () => {
                         </div>
                       ))}
                     </div>
+                    
+                    {tasksCompleted < weeklyGoal && (
+                      <Button 
+                        onClick={handleCompleteTask}
+                        variant="outline" 
+                        className="w-full mt-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Log Completed Task
+                      </Button>
+                    )}
+                    
+                    {tasksCompleted >= weeklyGoal && (
+                      <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded-md text-center mt-2">
+                        <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />
+                        Weekly goal achieved! Great job!
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -166,7 +295,27 @@ const Index = () => {
             <h2 className="text-xl font-semibold mb-6 text-sage-800 dark:text-sage-200">
               Today's Challenge
             </h2>
-            <DailyChallenge />
+            <Card className="w-full max-w-md mx-auto glass-card p-6 animate-fade-up">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="rounded-full bg-sage-100 p-3">
+                  <Leaf className="w-6 h-6 text-sage-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-center">Skip Plastic Today</h3>
+                <p className="text-muted-foreground text-center">
+                  Avoid single-use plastics for the next 24 hours
+                </p>
+                <div className="text-sm font-medium text-sage-600 bg-sage-50 px-3 py-1 rounded-full">
+                  Saves ~0.5kg CO2
+                </div>
+                <Button
+                  onClick={handleChallengeComplete}
+                  disabled={challengeCompleted}
+                  className="w-full bg-sage-600 hover:bg-sage-700 text-white"
+                >
+                  {challengeCompleted ? "Completed!" : "Complete Challenge"}
+                </Button>
+              </div>
+            </Card>
           </section>
 
           {user && (
@@ -182,11 +331,23 @@ const Index = () => {
                         <div className="shrink-0">
                           {achievement.icon}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-medium">{achievement.title}</h3>
                           <p className="text-sm text-muted-foreground">{achievement.description}</p>
                           <p className="text-xs text-muted-foreground mt-1">{achievement.date}</p>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-full"
+                          onClick={() => toggleFavoriteAchievement(achievement.id)}
+                        >
+                          {favoriteAchievements.includes(achievement.id) ? (
+                            <span className="text-amber-500">★</span>
+                          ) : (
+                            <span className="text-muted-foreground">☆</span>
+                          )}
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -221,17 +382,29 @@ const Index = () => {
                     <div className="divide-y">
                       {upcomingEvents.map((event) => (
                         <div key={event.id} className="p-4 hover:bg-background/40 transition-colors">
-                          <h3 className="font-medium">{event.title}</h3>
-                          <p className="text-sm text-muted-foreground">{event.description}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5 text-primary" />
-                              <span>{event.date}</span>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{event.title}</h3>
+                              <p className="text-sm text-muted-foreground">{event.description}</p>
+                              <div className="flex items-center gap-4 mt-2 text-xs">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5 text-primary" />
+                                  <span>{event.date}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Globe className="h-3.5 w-3.5 text-primary" />
+                                  <span>{event.location}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Globe className="h-3.5 w-3.5 text-primary" />
-                              <span>{event.location}</span>
-                            </div>
+                            <Button
+                              variant={upcomingEventsInterest.includes(event.id) ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => toggleEventInterest(event.id)}
+                              className="mt-1"
+                            >
+                              {upcomingEventsInterest.includes(event.id) ? "Interested" : "Mark Interest"}
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -274,7 +447,17 @@ const Index = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="border-t p-3">
-                    <Button variant="ghost" size="sm" className="w-full">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Leaderboard",
+                          description: "Full leaderboard will be available soon!",
+                        });
+                      }}
+                    >
                       View Leaderboard
                     </Button>
                   </CardFooter>
