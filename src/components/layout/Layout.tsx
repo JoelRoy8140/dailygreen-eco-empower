@@ -4,7 +4,6 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Home,
-  Calendar,
   Book,
   Map,
   Globe,
@@ -17,7 +16,6 @@ import { toast } from "sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
-  { name: "Task History", href: "/history", icon: Calendar },
   { name: "Guides", href: "/guides", icon: Book },
   { name: "Impact Map", href: "/map", icon: Map },
   { name: "Community", href: "/community", icon: Globe },
