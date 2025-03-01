@@ -26,7 +26,6 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/history" element={<div>Task History Coming Soon</div>} />
                 <Route path="/guides" element={<div>Guides Coming Soon</div>} />
                 <Route path="/map" element={<div>Impact Map Coming Soon</div>} />
                 <Route path="/community" element={<div>Community Coming Soon</div>} />
