@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import Guides from "./pages/Guides";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/guides" element={<div>Guides Coming Soon</div>} />
+                <Route path="/guides" element={<Guides />} />
                 <Route path="/map" element={<div>Impact Map Coming Soon</div>} />
                 <Route path="/community" element={<div>Community Coming Soon</div>} />
                 <Route path="/profile" element={<Profile />} />
