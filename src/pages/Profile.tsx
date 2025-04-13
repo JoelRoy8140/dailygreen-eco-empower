@@ -62,7 +62,7 @@ export default function Profile() {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (error) throw error;
         
@@ -71,9 +71,9 @@ export default function Profile() {
             displayName: data.display_name || "",
             location: "", // Add location to the profile table if needed
             avatarUrl: data.avatar_url || "",
-            emailNotifications: data.email_notifications,
-            pushNotifications: data.push_notifications,
-            dailyDigest: data.daily_digest,
+            emailNotifications: !!data.email_notifications,
+            pushNotifications: !!data.push_notifications,
+            dailyDigest: !!data.daily_digest,
           });
         }
       } catch (error) {
@@ -95,7 +95,7 @@ export default function Profile() {
       setIsSubmitting(true);
       const { error } = await supabase
         .from('feedback')
-        .insert([{ content: feedback }]);
+        .insert({ content: feedback });
 
       if (error) throw error;
 
@@ -197,6 +197,8 @@ export default function Profile() {
   const handleDeleteAccount = async () => {
     if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       try {
+        // Note: This requires admin privileges and might not work on client side
+        // In a real app, this would typically be done through a server endpoint
         const { error } = await supabase.auth.admin.deleteUser(user.id);
         if (error) throw error;
         

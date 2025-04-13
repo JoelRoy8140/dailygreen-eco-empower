@@ -7,13 +7,13 @@ const SUPABASE_URL = "https://dyizpcoejfpadopfukxr.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5aXpwY29lamZwYWRvcGZ1a3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0MTMxMzEsImV4cCI6MjA1NTk4OTEzMX0.6rWkKFUXglsLw4skKQv86_affkssW25xZwUF6vw_2R4";
 
 // Create a custom fetch implementation with a timeout
-const fetchWithTimeout = (url, options, timeout = 10000) => {
+const fetchWithTimeout = (url: string | URL | Request, options?: RequestInit, timeout = 10000): Promise<Response> => {
   return Promise.race([
     fetch(url, options),
-    new Promise((_, reject) => 
+    new Promise<Response>((_, reject) => 
       setTimeout(() => reject(new Error('Connection timed out')), timeout)
     )
-  ]);
+  ]) as Promise<Response>;
 };
 
 // Import the supabase client like this:

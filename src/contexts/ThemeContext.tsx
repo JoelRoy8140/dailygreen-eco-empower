@@ -27,13 +27,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           .from('profiles')
           .select('theme')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
           
         if (error) throw error;
         
-        if (data && (data.theme === 'light' || data.theme === 'dark')) {
-          setThemeState(data.theme);
-          document.documentElement.className = data.theme;
+        if (data && data.theme) {
+          const userTheme = data.theme as ThemeType;
+          if (userTheme === 'light' || userTheme === 'dark') {
+            setThemeState(userTheme);
+            document.documentElement.className = userTheme;
+          }
         }
       } catch (error) {
         console.error("Error loading theme:", error);
@@ -61,10 +64,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Save theme to user profile if logged in
     if (user) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ theme: newTheme })
           .eq('id', user.id);
+        
+        if (error) throw error;
       } catch (error) {
         console.error("Error saving theme preference:", error);
       }
