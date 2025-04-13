@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import Guides from "./pages/Guides";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/guides" element={<Guides />} />
                 <Route path="/map" element={<div>Impact Map Coming Soon</div>} />
                 <Route path="/community" element={<div>Community Coming Soon</div>} />
