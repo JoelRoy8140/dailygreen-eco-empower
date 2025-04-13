@@ -17,15 +17,33 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [session, setSession] = useState(null);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setSession(data.session);
-        navigate("/");
+    async function checkSession() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+            console.error("Supabase connection error:", error);
+            setConnectionError(true);
+            return;
+          }
+          throw error;
+        }
+        
+        if (data.session) {
+          setSession(data.session);
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
-    });
+    }
+    
+    checkSession();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -55,7 +73,15 @@ export default function Auth() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          setConnectionError(true);
+          console.error("Supabase connection error during sign in:", error);
+          return;
+        }
+        throw error;
+      }
+      
       toast.success("Signed in successfully!");
     } catch (error) {
       console.error("Error signing in:", error);
@@ -87,7 +113,14 @@ export default function Auth() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          setConnectionError(true);
+          console.error("Supabase connection error during sign up:", error);
+          return;
+        }
+        throw error;
+      }
       
       toast.success("Signed up successfully! Please check your email for verification.");
     } catch (error) {
@@ -115,7 +148,14 @@ export default function Auth() {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          setConnectionError(true);
+          console.error("Supabase connection error during Google sign in:", error);
+          return;
+        }
+        throw error;
+      }
       
       // If we have a URL to redirect to, go there
       if (data?.url) {
@@ -129,6 +169,34 @@ export default function Auth() {
       setGoogleLoading(false);
     }
   };
+
+  // If connection error, show error state
+  if (connectionError) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md p-6 shadow-xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold mb-4">Connection Error</h1>
+            <p className="mb-6 text-muted-foreground">
+              Unable to connect to our authentication service. This could be due to network issues or the service may be temporarily unavailable.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full mb-4"
+            >
+              Try Again
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              If the problem persists, please try again later or contact support.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   // If user is already logged in, redirect to homepage
   if (session) {

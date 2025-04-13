@@ -1,11 +1,14 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertCircle } from "lucide-react";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     // Get the hash from the URL
@@ -13,10 +16,16 @@ export default function AuthCallback() {
     
     async function handleOAuthCallback() {
       try {
+        setIsLoading(true);
         // Check if we have a session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
+          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+            setConnectionError(true);
+            console.error("Supabase connection error:", error);
+            return;
+          }
           throw error;
         }
         
@@ -26,19 +35,30 @@ export default function AuthCallback() {
           navigate("/");
         } else {
           // No session but no error, this might be a new login
-          const { error: signInError } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: window.location.origin
+          try {
+            const { error: signInError } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: window.location.origin
+              }
+            });
+            
+            if (signInError) throw signInError;
+          } catch (signInError) {
+            if (signInError.message && (signInError.message.includes("Failed to fetch") || signInError.message.includes("NetworkError"))) {
+              setConnectionError(true);
+              console.error("Supabase connection error during sign in:", signInError);
+              return;
             }
-          });
-          
-          if (signInError) throw signInError;
+            throw signInError;
+          }
         }
       } catch (error) {
         console.error("Error during OAuth callback:", error);
         toast.error("Failed to complete sign in. Please try again.");
         navigate("/auth");
+      } finally {
+        setIsLoading(false);
       }
     }
     
@@ -50,6 +70,26 @@ export default function AuthCallback() {
       navigate("/auth");
     }
   }, [navigate]);
+
+  if (connectionError) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+          <AlertCircle className="w-6 h-6 text-red-600" />
+        </div>
+        <h1 className="text-xl font-medium text-center">Connection Error</h1>
+        <p className="text-muted-foreground mt-2 text-center max-w-md">
+          Unable to connect to authentication service. This could be due to network issues or the service may be temporarily unavailable.
+        </p>
+        <button 
+          onClick={() => navigate("/auth")}
+          className="mt-6 px-4 py-2 bg-sage-500 text-white rounded-md hover:bg-sage-600 transition-colors"
+        >
+          Return to Sign In
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center">
