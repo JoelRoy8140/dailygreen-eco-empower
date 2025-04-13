@@ -2,13 +2,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle } from "lucide-react";
+import { supabase, checkSupabaseConnection } from "@/integrations/supabase/client";
+import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   useEffect(() => {
     // Get the hash from the URL
@@ -17,11 +19,22 @@ export default function AuthCallback() {
     async function handleOAuthCallback() {
       try {
         setIsLoading(true);
+        
+        // First check connection to Supabase
+        const isConnected = await checkSupabaseConnection();
+        if (!isConnected) {
+          setConnectionError(true);
+          console.error("Supabase connection failed");
+          return;
+        }
+        
         // Check if we have a session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          if (error.message.includes("Failed to fetch") || 
+              error.message.includes("NetworkError") || 
+              error.message.includes("timeout")) {
             setConnectionError(true);
             console.error("Supabase connection error:", error);
             return;
@@ -43,13 +56,19 @@ export default function AuthCallback() {
               }
             });
             
-            if (signInError) throw signInError;
-          } catch (signInError) {
-            if (signInError.message && (signInError.message.includes("Failed to fetch") || signInError.message.includes("NetworkError"))) {
-              setConnectionError(true);
-              console.error("Supabase connection error during sign in:", signInError);
-              return;
+            if (signInError) {
+              if (signInError.message && 
+                  (signInError.message.includes("Failed to fetch") || 
+                   signInError.message.includes("NetworkError") || 
+                   signInError.message.includes("timeout"))) {
+                setConnectionError(true);
+                console.error("Supabase connection error during sign in:", signInError);
+                return;
+              }
+              throw signInError;
             }
+          } catch (signInError) {
+            console.error("Error during sign in:", signInError);
             throw signInError;
           }
         }
@@ -69,24 +88,40 @@ export default function AuthCallback() {
       // No hash, redirect to auth page
       navigate("/auth");
     }
-  }, [navigate]);
+  }, [navigate, retries]);
+
+  const handleRetry = async () => {
+    setConnectionError(false);
+    setIsLoading(true);
+    setRetries(prev => prev + 1);
+  };
 
   if (connectionError) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
-          <AlertCircle className="w-6 h-6 text-red-600" />
+          <WifiOff className="w-6 h-6 text-red-600" />
         </div>
         <h1 className="text-xl font-medium text-center">Connection Error</h1>
         <p className="text-muted-foreground mt-2 text-center max-w-md">
           Unable to connect to authentication service. This could be due to network issues or the service may be temporarily unavailable.
         </p>
-        <button 
-          onClick={() => navigate("/auth")}
-          className="mt-6 px-4 py-2 bg-sage-500 text-white rounded-md hover:bg-sage-600 transition-colors"
-        >
-          Return to Sign In
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <Button 
+            onClick={handleRetry}
+            className="px-4 py-2 bg-sage-500 text-white rounded-md hover:bg-sage-600 transition-colors"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Retry Connection
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate("/auth")}
+            className="px-4 py-2 rounded-md"
+          >
+            Return to Sign In
+          </Button>
+        </div>
       </div>
     );
   }

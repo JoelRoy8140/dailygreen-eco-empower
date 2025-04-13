@@ -7,62 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock, User, AlertCircle, ExternalLink } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Mail, Lock, User, AlertCircle, ExternalLink, RefreshCw, Wifi, WifiOff } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { session, isLoading, connectionStatus, checkConnection } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [session, setSession] = useState(null);
-  const [connectionError, setConnectionError] = useState(false);
-
+  
   useEffect(() => {
-    // Check if user is already logged in
-    async function checkSession() {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-            console.error("Supabase connection error:", error);
-            setConnectionError(true);
-            return;
-          }
-          throw error;
-        }
-        
-        if (data.session) {
-          setSession(data.session);
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      }
+    // Redirect if user is already logged in
+    if (session) {
+      navigate("/");
     }
-    
-    checkSession();
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (session) {
-          navigate("/");
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [session, navigate]);
 
   const handleEmailSignIn = async (e) => {
     e.preventDefault();
     
     if (!email || !password) {
       toast.error("Please enter both email and password");
+      return;
+    }
+    
+    if (connectionStatus === 'disconnected') {
+      toast.error("Cannot sign in due to connection issues");
       return;
     }
     
@@ -74,9 +47,9 @@ export default function Auth() {
       });
 
       if (error) {
-        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-          setConnectionError(true);
-          console.error("Supabase connection error during sign in:", error);
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("timeout")) {
+          toast.error("Connection to authentication service failed");
+          await checkConnection();
           return;
         }
         throw error;
@@ -99,6 +72,11 @@ export default function Auth() {
       return;
     }
     
+    if (connectionStatus === 'disconnected') {
+      toast.error("Cannot sign up due to connection issues");
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -114,9 +92,9 @@ export default function Auth() {
       });
 
       if (error) {
-        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-          setConnectionError(true);
-          console.error("Supabase connection error during sign up:", error);
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("timeout")) {
+          toast.error("Connection to authentication service failed");
+          await checkConnection();
           return;
         }
         throw error;
@@ -132,6 +110,11 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (connectionStatus === 'disconnected') {
+      toast.error("Cannot sign in with Google due to connection issues");
+      return;
+    }
+    
     try {
       setGoogleLoading(true);
       
@@ -149,9 +132,9 @@ export default function Auth() {
       });
       
       if (error) {
-        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-          setConnectionError(true);
-          console.error("Supabase connection error during Google sign in:", error);
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("timeout")) {
+          toast.error("Connection to Google authentication failed");
+          await checkConnection();
           return;
         }
         throw error;
@@ -170,23 +153,24 @@ export default function Auth() {
     }
   };
 
-  // If connection error, show error state
-  if (connectionError) {
+  // If connection error, show error state with retry option
+  if (connectionStatus === 'disconnected') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
         <Card className="w-full max-w-md p-6 shadow-xl">
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+              <WifiOff className="w-6 h-6 text-red-600" />
             </div>
             <h1 className="text-2xl font-bold mb-4">Connection Error</h1>
             <p className="mb-6 text-muted-foreground">
               Unable to connect to our authentication service. This could be due to network issues or the service may be temporarily unavailable.
             </p>
             <Button 
-              onClick={() => window.location.reload()} 
+              onClick={() => checkConnection()} 
               className="w-full mb-4"
             >
+              <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
             <p className="text-sm text-muted-foreground">
@@ -198,15 +182,39 @@ export default function Auth() {
     );
   }
 
+  // If checking connection, show loading state
+  if (connectionStatus === 'checking') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md p-6 shadow-xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="animate-spin h-12 w-12 border-4 border-sage-500 rounded-full border-t-transparent mb-4"></div>
+            <h1 className="text-xl font-medium">Checking connection...</h1>
+            <p className="text-muted-foreground mt-2">Please wait while we connect to the authentication service.</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // If user is already logged in, redirect to homepage
   if (session) {
     return null;
   }
 
+  // Main auth UI
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <Card className="w-full max-w-md p-6 shadow-xl">
-        <h1 className="text-2xl font-bold text-center mb-6">Welcome to DailyGreen</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Welcome to DailyGreen</h1>
+          {connectionStatus === 'connected' && (
+            <div className="flex items-center gap-1 text-xs text-green-600">
+              <Wifi className="w-3 h-3" />
+              <span>Connected</span>
+            </div>
+          )}
+        </div>
         
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid grid-cols-2 mb-6">
