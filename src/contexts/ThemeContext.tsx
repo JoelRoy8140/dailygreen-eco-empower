@@ -66,7 +66,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       try {
         const { error } = await supabase
           .from('profiles')
-          .update({ theme: newTheme })
+          .update({ theme: newTheme } as any)
           .eq('id', user.id);
         
         if (error) throw error;

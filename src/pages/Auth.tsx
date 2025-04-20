@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { Mail, Lock, User, AlertCircle, ExternalLink, RefreshCw, Wifi, WifiOff }
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { session, isLoading, connectionStatus, checkConnection } = useAuth();
+  const { session, isLoading, connectionStatus, checkConnection, refreshSession } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -26,7 +25,12 @@ export default function Auth() {
     }
   }, [session, navigate]);
 
-  const handleEmailSignIn = async (e) => {
+  const handleRefreshConnection = async () => {
+    await checkConnection();
+    await refreshSession();
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -56,7 +60,7 @@ export default function Auth() {
       }
       
       toast.success("Signed in successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in:", error);
       toast.error(error.message || "Error signing in");
     } finally {
@@ -64,7 +68,7 @@ export default function Auth() {
     }
   };
 
-  const handleEmailSignUp = async (e) => {
+  const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -101,7 +105,7 @@ export default function Auth() {
       }
       
       toast.success("Signed up successfully! Please check your email for verification.");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing up:", error);
       toast.error(error.message || "Error signing up");
     } finally {
@@ -145,7 +149,7 @@ export default function Auth() {
         toast.info("Redirecting to Google...");
         window.location.href = data.url;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in with Google:", error);
       toast.error(error.message || "Error connecting to Google. Please try again.");
     } finally {
@@ -167,7 +171,7 @@ export default function Auth() {
               Unable to connect to our authentication service. This could be due to network issues or the service may be temporarily unavailable.
             </p>
             <Button 
-              onClick={() => checkConnection()} 
+              onClick={handleRefreshConnection} 
               className="w-full mb-4"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -202,7 +206,6 @@ export default function Auth() {
     return null;
   }
 
-  // Main auth UI
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <Card className="w-full max-w-md p-6 shadow-xl">

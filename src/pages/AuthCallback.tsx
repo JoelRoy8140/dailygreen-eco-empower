@@ -5,9 +5,11 @@ import { toast } from "sonner";
 import { supabase, checkSupabaseConnection } from "@/integrations/supabase/client";
 import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { refreshSession } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
   const [retries, setRetries] = useState(0);
@@ -49,24 +51,9 @@ export default function AuthCallback() {
         } else {
           // No session but no error, this might be a new login
           try {
-            const { error: signInError } = await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: {
-                redirectTo: window.location.origin
-              }
-            });
-            
-            if (signInError) {
-              if (signInError.message && 
-                  (signInError.message.includes("Failed to fetch") || 
-                   signInError.message.includes("NetworkError") || 
-                   signInError.message.includes("timeout"))) {
-                setConnectionError(true);
-                console.error("Supabase connection error during sign in:", signInError);
-                return;
-              }
-              throw signInError;
-            }
+            await refreshSession();
+            // If we get here without error, try to redirect home
+            navigate("/");
           } catch (signInError) {
             console.error("Error during sign in:", signInError);
             throw signInError;
@@ -88,7 +75,7 @@ export default function AuthCallback() {
       // No hash, redirect to auth page
       navigate("/auth");
     }
-  }, [navigate, retries]);
+  }, [navigate, retries, refreshSession]);
 
   const handleRetry = async () => {
     setConnectionError(false);

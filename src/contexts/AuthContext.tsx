@@ -11,6 +11,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   connectionStatus: 'connected' | 'disconnected' | 'checking';
   checkConnection: () => Promise<boolean>;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +27,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isConnected = await checkSupabaseConnection();
     setConnectionStatus(isConnected ? 'connected' : 'disconnected');
     return isConnected;
+  };
+  
+  const refreshSession = async () => {
+    try {
+      setIsLoading(true);
+      const isConnected = await checkConnection();
+      
+      if (!isConnected) {
+        setIsLoading(false);
+        return;
+      }
+      
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error("Error refreshing session:", error);
+        if (error.message.includes("Token expired") || error.message.includes("Invalid token")) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          toast.error("Your session has expired. Please sign in again.");
+        }
+      } else {
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      }
+    } catch (error) {
+      console.error("Error during refresh:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -59,6 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return () => subscription.unsubscribe();
     });
+    
+    // Set up an interval to refresh the connection status periodically
+    const connectionCheckInterval = setInterval(() => {
+      checkConnection();
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(connectionCheckInterval);
   }, []);
 
   const signOut = async () => {
@@ -83,7 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     signOut,
     connectionStatus,
-    checkConnection
+    checkConnection,
+    refreshSession
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

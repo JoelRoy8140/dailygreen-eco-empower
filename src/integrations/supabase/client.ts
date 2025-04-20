@@ -12,8 +12,10 @@ const fetchWithTimeout = (url: string | URL | Request, options?: RequestInit, ti
     fetch(url, options),
     new Promise<Response>((_, reject) => 
       setTimeout(() => reject(new Error('Connection timed out')), timeout)
-    )
-  ]) as Promise<Response>;
+    ).then(() => {
+      throw new Error('Connection timed out');
+    }) as Promise<Response>
+  ]);
 };
 
 // Import the supabase client like this:
@@ -28,7 +30,7 @@ export const supabase = createClient<Database>(
       persistSession: true,
     },
     global: {
-      fetch: fetchWithTimeout,
+      fetch: fetchWithTimeout as typeof fetch,
     },
   }
 );

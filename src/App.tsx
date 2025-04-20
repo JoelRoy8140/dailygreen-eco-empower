@@ -13,14 +13,63 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Guides from "./pages/Guides";
+import { useEffect } from "react";
+import { checkSupabaseConnection } from "./integrations/supabase/client";
 
-const queryClient = new QueryClient();
+// Configure the QueryClient with retry logic for connection issues
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Retry on connection errors
+        if (error?.message?.includes('Failed to fetch') || 
+            error?.message?.includes('NetworkError') || 
+            error?.message?.includes('timeout')) {
+          return failureCount < 3; // Retry up to 3 times
+        }
+        return false; // Don't retry other errors
+      },
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    },
+    mutations: {
+      retry: (failureCount, error: any) => {
+        // Retry on connection errors
+        if (error?.message?.includes('Failed to fetch') || 
+            error?.message?.includes('NetworkError') || 
+            error?.message?.includes('timeout')) {
+          return failureCount < 2; // Retry up to 2 times
+        }
+        return false; // Don't retry other errors
+      },
+    },
+  },
+});
+
+// Periodically check Supabase connection in the background
+function ConnectionMonitor() {
+  useEffect(() => {
+    const checkConnection = async () => {
+      await checkSupabaseConnection();
+    };
+    
+    // Check connection every minute
+    const interval = setInterval(checkConnection, 60000);
+    
+    // Initial check
+    checkConnection();
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
         <ThemeProvider>
+          <ConnectionMonitor />
           <Toaster />
           <Sonner />
           <BrowserRouter>
