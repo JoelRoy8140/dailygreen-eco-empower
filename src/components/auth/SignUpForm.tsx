@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const SignUpForm = () => {
   const [loading, setLoading] = useState(false);
@@ -12,6 +13,7 @@ export const SignUpForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,7 @@ export const SignUpForm = () => {
 
   const handleGoogleSignIn = async () => {
     try {
+      setGoogleError(null);
       setGoogleLoading(true);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -66,13 +69,20 @@ export const SignUpForm = () => {
       });
       
       if (error) {
+        // Handle connection refused errors specifically
+        if (error.message.includes("refused to connect") || error.message.includes("accounts.google.com")) {
+          setGoogleError("Connection to Google authentication was refused. Please ensure Google authentication is properly configured in Supabase.");
+          console.error("Google connection refused:", error);
+          return;
+        }
+        
         if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("timeout")) {
-          toast.error("Connection to Google authentication failed");
+          setGoogleError("Connection to Google authentication failed. Please try again later.");
           return;
         }
         
         if (error.message.includes("provider is not enabled") || error.message.includes("Unsupported provider")) {
-          toast.error("Google authentication is not enabled. Please enable it in your Supabase dashboard.");
+          setGoogleError("Google authentication is not enabled. Please enable it in your Supabase dashboard.");
           console.error("Google provider not enabled in Supabase:", error);
           return;
         }
@@ -83,11 +93,11 @@ export const SignUpForm = () => {
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        toast.error("Failed to get authentication URL from Google");
+        setGoogleError("Failed to get authentication URL from Google");
       }
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
-      toast.error(error.message || "Error connecting to Google. Please try again.");
+      setGoogleError(error.message || "Error connecting to Google. Please try again.");
     } finally {
       setGoogleLoading(false);
     }
@@ -146,6 +156,15 @@ export const SignUpForm = () => {
           <span className="px-2 bg-white text-gray-500">Or continue with</span>
         </div>
       </div>
+      
+      {googleError && (
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            {googleError}
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Button
         type="button"

@@ -3,12 +3,13 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wifi } from "lucide-react";
+import { Wifi, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { ConnectionError } from "@/components/auth/ConnectionError";
 import { ConnectionChecking } from "@/components/auth/ConnectionChecking";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -49,6 +50,13 @@ export default function Auth() {
             </div>
           )}
         </div>
+        
+        <Alert className="mb-4 bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-xs text-blue-700">
+            Email/password authentication is enabled. Google authentication requires additional setup in the Supabase dashboard.
+          </AlertDescription>
+        </Alert>
         
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid grid-cols-2 mb-6">
