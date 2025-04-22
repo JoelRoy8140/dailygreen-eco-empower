@@ -70,6 +70,13 @@ export const SignUpForm = () => {
           toast.error("Connection to Google authentication failed");
           return;
         }
+        
+        if (error.message.includes("provider is not enabled") || error.message.includes("Unsupported provider")) {
+          toast.error("Google authentication is not enabled. Please enable it in your Supabase dashboard.");
+          console.error("Google provider not enabled in Supabase:", error);
+          return;
+        }
+        
         throw error;
       }
       
