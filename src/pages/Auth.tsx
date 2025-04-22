@@ -19,7 +19,6 @@ export default function Auth() {
   const [name, setName] = useState("");
   
   useEffect(() => {
-    // Redirect if user is already logged in
     if (session) {
       navigate("/");
     }
@@ -84,7 +83,6 @@ export default function Auth() {
     try {
       setLoading(true);
       
-      // Sign up the user
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -122,16 +120,13 @@ export default function Auth() {
     try {
       setGoogleLoading(true);
       
-      // Configure the OAuth redirect with more options
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           },
-          scopes: 'email profile',
         }
       });
       
@@ -144,10 +139,10 @@ export default function Auth() {
         throw error;
       }
       
-      // If we have a URL to redirect to, go there
       if (data?.url) {
-        toast.info("Redirecting to Google...");
         window.location.href = data.url;
+      } else {
+        toast.error("Failed to get authentication URL from Google");
       }
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
@@ -157,7 +152,6 @@ export default function Auth() {
     }
   };
 
-  // If connection error, show error state with retry option
   if (connectionStatus === 'disconnected') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -186,7 +180,6 @@ export default function Auth() {
     );
   }
 
-  // If checking connection, show loading state
   if (connectionStatus === 'checking') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -201,7 +194,6 @@ export default function Auth() {
     );
   }
 
-  // If user is already logged in, redirect to homepage
   if (session) {
     return null;
   }
