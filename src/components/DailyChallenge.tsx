@@ -47,16 +47,16 @@ export function DailyChallenge() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto glass-card p-6 animate-fade-up">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="rounded-full bg-sage-100 p-3">
-          <Leaf className="w-6 h-6 text-sage-600" />
+    <Card className="w-full glass-card p-4 md:p-6 animate-fade-up">
+      <div className="flex flex-col items-center space-y-3 md:space-y-4">
+        <div className="rounded-full bg-sage-100 p-2 md:p-3">
+          <Leaf className="w-5 h-5 md:w-6 md:h-6 text-sage-600" />
         </div>
-        <h3 className="text-xl font-semibold text-center">{challenge.title}</h3>
-        <p className="text-muted-foreground text-center">
+        <h3 className="text-lg md:text-xl font-semibold text-center">{challenge.title}</h3>
+        <p className="text-sm md:text-base text-muted-foreground text-center">
           {challenge.description}
         </p>
-        <div className="text-sm font-medium text-sage-600 bg-sage-50 px-3 py-1 rounded-full">
+        <div className="text-xs md:text-sm font-medium text-sage-600 bg-sage-50 px-2 py-1 md:px-3 md:py-1 rounded-full">
           {challenge.impact}
         </div>
         <Button
