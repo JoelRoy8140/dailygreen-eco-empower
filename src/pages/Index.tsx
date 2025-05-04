@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ImpactMetrics } from "@/components/ImpactMetrics";
 import { DailyChallenge } from "@/components/DailyChallenge";
 import { TaskHistory } from "@/components/TaskHistory";
+import { ImpactMap } from "@/components/ImpactMap";
 
 export default function Index() {
   const isMobile = useIsMobile();
@@ -20,6 +21,8 @@ export default function Index() {
         <ImpactMetrics />
         <DailyChallenge />
       </div>
+      
+      <ImpactMap />
       
       <TaskHistory />
     </div>
