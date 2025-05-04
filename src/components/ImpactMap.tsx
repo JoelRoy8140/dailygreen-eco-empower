@@ -7,12 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Earth, Trees, Droplet, Wind } from "lucide-react";
+import { Earth, Trees, Droplet, Wind, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// Temporarily use a public token (in a real app, this would be in an environment variable)
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZWFpIiwiYSI6ImNsczFxeW5wYTBkcngya3FrZWRoMmxidHIifQ.q-31j0iQJVwinPNXfVGEEw';
 
 // Impact action types
 type ActionType = 'tree-planting' | 'water-conservation' | 'renewable-energy' | 'community-cleanup';
@@ -99,9 +96,10 @@ export function ImpactMap() {
   const [markers, setMarkers] = useState<ImpactMarker[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [tokenInput, setTokenInput] = useState('');
-  const [userToken, setUserToken] = useState(MAPBOX_TOKEN);
-  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [userToken, setUserToken] = useState('');
+  const [showTokenInput, setShowTokenInput] = useState(true);
   const isMobile = useIsMobile();
   
   // Total impact calculation
@@ -153,115 +151,145 @@ export function ImpactMap() {
     }).format(date);
   };
   
-  // Initialize map
+  // Check for saved token on component mount
   useEffect(() => {
-    // Save API token in local storage, if provided by user
-    if (tokenInput) {
-      localStorage.setItem('mapbox_token', tokenInput);
-      setUserToken(tokenInput);
-    }
-    
-    // Check if we have a saved token
+    // Try to get token from localStorage
     const savedToken = localStorage.getItem('mapbox_token');
     if (savedToken) {
       setUserToken(savedToken);
+      setShowTokenInput(false);
+    } else {
+      setShowTokenInput(true);
     }
     
     // Load initial markers
     setMarkers(initialMarkers);
+  }, []);
+  
+  // Initialize map whenever the user token changes
+  useEffect(() => {
+    if (!mapContainer.current || !userToken) return;
     
-    // Initialize map
-    if (!mapLoaded && mapContainer.current && userToken) {
+    // Clear any previous map instance
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+    
+    setMapError(null);
+    
+    try {
+      // Set the access token
       mapboxgl.accessToken = userToken;
       
-      try {
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/light-v11',
-          projection: 'globe',
-          zoom: 1.5,
-          center: [0, 30],
-          pitch: 40,
+      // Create new map instance
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        projection: 'globe',
+        zoom: 1.5,
+        center: [0, 30],
+        pitch: 40,
+      });
+      
+      // Add controls
+      map.current.addControl(
+        new mapboxgl.NavigationControl({
+          visualizePitch: true,
+        }),
+        'top-right'
+      );
+      
+      // Add atmosphere and fog effects
+      map.current.on('style.load', () => {
+        if (!map.current) return;
+        
+        map.current.setFog({
+          color: 'rgb(255, 255, 255)',
+          'high-color': 'rgb(200, 200, 225)',
+          'horizon-blend': 0.2,
         });
         
-        // Add controls
-        map.current.addControl(
-          new mapboxgl.NavigationControl({
-            visualizePitch: true,
-          }),
-          'top-right'
-        );
+        // Set the map as loaded
+        setMapLoaded(true);
         
-        // Add atmosphere and fog effects
-        map.current.on('style.load', () => {
-          map.current?.setFog({
-            color: 'rgb(255, 255, 255)',
-            'high-color': 'rgb(200, 200, 225)',
-            'horizon-blend': 0.2,
-          });
-          
-          // Set the map as loaded
-          setMapLoaded(true);
-          
-          // Add markers after style is loaded
-          addMarkersToMap(initialMarkers);
-        });
+        // Add markers after style is loaded
+        addMarkersToMap(initialMarkers);
+      });
+      
+      // Error handling
+      map.current.on('error', (e) => {
+        console.error("Mapbox error:", e);
+        setMapError("Failed to initialize map. Please check your Mapbox token.");
+        setMapLoaded(false);
+        setShowTokenInput(true);
         
-        // Auto-rotation settings
-        const secondsPerRevolution = 180;
-        const maxSpinZoom = 4;
-        const slowSpinZoom = 3;
-        let userInteracting = false;
-        let spinEnabled = true;
-        
-        // Spin globe function
-        function spinGlobe() {
-          if (!map.current) return;
-          
-          const zoom = map.current.getZoom();
-          if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
-            let distancePerSecond = 360 / secondsPerRevolution;
-            if (zoom > slowSpinZoom) {
-              const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
-              distancePerSecond *= zoomDif;
-            }
-            const center = map.current.getCenter();
-            center.lng -= distancePerSecond / 60;
-            map.current.easeTo({ center, duration: 1000, easing: (n) => n });
-          }
-        }
-        
-        // Start spinning
-        const spinInterval = setInterval(spinGlobe, 1000);
-        
-        // Add interaction handlers
-        map.current.on('mousedown', () => { userInteracting = true; });
-        map.current.on('dragstart', () => { userInteracting = true; });
-        map.current.on('moveend', () => { 
-          userInteracting = false; 
-          spinGlobe();
-        });
-        map.current.on('touchend', () => { 
-          userInteracting = false; 
-          spinGlobe();
-        });
-        
-        // Return cleanup function
-        return () => {
-          clearInterval(spinInterval);
-          map.current?.remove();
-        };
-      } catch (error) {
-        console.error("Error initializing map:", error);
         toast({
           title: "Map Error",
-          description: "Could not initialize map. Please check your Mapbox token.",
+          description: "Failed to load map. Please check your Mapbox token.",
           variant: "destructive"
         });
-        setShowTokenInput(true);
+      });
+      
+      // Auto-rotation settings
+      const secondsPerRevolution = 180;
+      const maxSpinZoom = 4;
+      const slowSpinZoom = 3;
+      let userInteracting = false;
+      let spinEnabled = true;
+      
+      // Spin globe function
+      function spinGlobe() {
+        if (!map.current) return;
+        
+        const zoom = map.current.getZoom();
+        if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
+          let distancePerSecond = 360 / secondsPerRevolution;
+          if (zoom > slowSpinZoom) {
+            const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
+            distancePerSecond *= zoomDif;
+          }
+          const center = map.current.getCenter();
+          center.lng -= distancePerSecond / 60;
+          map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+        }
       }
+      
+      // Start spinning
+      const spinInterval = setInterval(spinGlobe, 1000);
+      
+      // Add interaction handlers
+      map.current.on('mousedown', () => { userInteracting = true; });
+      map.current.on('dragstart', () => { userInteracting = true; });
+      map.current.on('moveend', () => { 
+        userInteracting = false; 
+        spinGlobe();
+      });
+      map.current.on('touchend', () => { 
+        userInteracting = false; 
+        spinGlobe();
+      });
+      
+      // Return cleanup function
+      return () => {
+        clearInterval(spinInterval);
+        if (map.current) {
+          map.current.remove();
+        }
+      };
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      setMapError("Could not initialize map. Please check your Mapbox token.");
+      setMapLoaded(false);
+      setShowTokenInput(true);
+      
+      toast({
+        title: "Map Error",
+        description: "Could not initialize map. Please check your Mapbox token.",
+        variant: "destructive"
+      });
     }
-  }, [userToken, mapLoaded, toast]);
+  }, [userToken, toast]);
   
   // Add or update markers when filtered markers change
   useEffect(() => {
@@ -318,16 +346,14 @@ export function ImpactMap() {
   // Handle token submit
   const handleTokenSubmit = () => {
     if (tokenInput.trim()) {
+      // Save token to local storage
+      localStorage.setItem('mapbox_token', tokenInput);
       setUserToken(tokenInput);
-      setShowTokenInput(false);
       
       toast({
         title: "Token Updated",
         description: "Your Mapbox token has been updated. The map will reload.",
       });
-      
-      // Force map reload
-      setMapLoaded(false);
     } else {
       toast({
         title: "Error",
@@ -360,15 +386,35 @@ export function ImpactMap() {
         </div>
         
         {showTokenInput && (
-          <div className="mt-4 flex gap-2">
-            <input
-              type="text"
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="Enter your Mapbox API token"
-              className="flex-1 px-3 py-2 border border-input rounded-md"
-            />
-            <Button onClick={handleTokenSubmit}>Save</Button>
+          <div className="mt-4 space-y-4">
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-amber-800 dark:text-amber-300">Mapbox Token Required</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  This map requires a Mapbox access token. You can get a free token by creating an account at{" "}
+                  <a 
+                    href="https://mapbox.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    mapbox.com
+                  </a>
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="Enter your Mapbox API token"
+                className="flex-1 px-3 py-2 border border-input rounded-md"
+              />
+              <Button onClick={handleTokenSubmit}>Save</Button>
+            </div>
           </div>
         )}
       </CardHeader>
@@ -423,7 +469,7 @@ export function ImpactMap() {
         
         {/* Map container */}
         <div className={`rounded-lg overflow-hidden border border-border ${isMobile ? 'h-[400px]' : 'h-[500px]'}`}>
-          {!mapLoaded && !userToken && (
+          {!userToken ? (
             <div className="flex items-center justify-center w-full h-full bg-muted">
               <div className="text-center p-4">
                 <Earth className="mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4" />
@@ -432,8 +478,18 @@ export function ImpactMap() {
                 <Button onClick={() => setShowTokenInput(true)}>Enter API Token</Button>
               </div>
             </div>
+          ) : mapError ? (
+            <div className="flex items-center justify-center w-full h-full bg-muted">
+              <div className="text-center p-4">
+                <AlertCircle className="mx-auto h-16 w-16 text-destructive opacity-50 mb-4" />
+                <h3 className="text-lg font-medium">Map Error</h3>
+                <p className="text-muted-foreground mb-4">{mapError}</p>
+                <Button onClick={() => setShowTokenInput(true)}>Update API Token</Button>
+              </div>
+            </div>
+          ) : (
+            <div ref={mapContainer} className="w-full h-full" />
           )}
-          <div ref={mapContainer} className="w-full h-full" />
         </div>
         
         {/* Legend */}
