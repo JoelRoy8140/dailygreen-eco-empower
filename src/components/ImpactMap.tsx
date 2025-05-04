@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -7,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Earth, Trees, Droplet, Wind, AlertCircle } from "lucide-react";
+import { Earth, Trees, Droplet, Wind, AlertCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -390,18 +389,24 @@ export function ImpactMap() {
             <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
               <div>
-                <h4 className="font-medium text-amber-800 dark:text-amber-300">Mapbox Token Required</h4>
+                <h4 className="font-medium text-amber-800 dark:text-amber-300">Free Mapbox Token Available</h4>
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  This map requires a Mapbox access token. You can get a free token by creating an account at{" "}
-                  <a 
-                    href="https://mapbox.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="underline font-medium"
-                  >
-                    mapbox.com
-                  </a>
+                  Mapbox offers a free tier with 50,000 map views per month. You only need to create a free account - no credit card required.
                 </p>
+                <ol className="text-sm text-amber-700 dark:text-amber-400 mt-2 list-decimal pl-5">
+                  <li>Sign up for a free account at <a 
+                      href="https://account.mapbox.com/auth/signup/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline font-medium inline-flex items-center"
+                    >
+                      mapbox.com <ExternalLink className="h-3 w-3 ml-0.5" />
+                    </a>
+                  </li>
+                  <li>After signing up, go to your account dashboard</li>
+                  <li>Find and copy your default public token</li>
+                  <li>Paste it below and click Save</li>
+                </ol>
               </div>
             </div>
             
