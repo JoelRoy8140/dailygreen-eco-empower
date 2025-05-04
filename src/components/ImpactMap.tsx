@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Earth, Tree, Droplet, Wind } from "lucide-react";
+import { Earth, Trees, Droplet, Wind } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -135,7 +135,7 @@ export function ImpactMap() {
   // Get icon for marker type
   const getMarkerIcon = (type: ActionType) => {
     switch(type) {
-      case 'tree-planting': return <Tree className="h-4 w-4" />;
+      case 'tree-planting': return <Trees className="h-4 w-4" />;
       case 'water-conservation': return <Droplet className="h-4 w-4" />;
       case 'renewable-energy': return <Wind className="h-4 w-4" />;
       case 'community-cleanup': return <Earth className="h-4 w-4" />;
@@ -380,7 +380,7 @@ export function ImpactMap() {
             <TabsList className="w-full grid grid-cols-2 md:grid-cols-5">
               <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
               <TabsTrigger value="tree-planting" className="flex-1 flex items-center justify-center">
-                <Tree className="h-4 w-4 mr-1" /> Trees
+                <Trees className="h-4 w-4 mr-1" /> Trees
               </TabsTrigger>
               <TabsTrigger value="water-conservation" className="flex-1 flex items-center justify-center">
                 <Droplet className="h-4 w-4 mr-1" /> Water
