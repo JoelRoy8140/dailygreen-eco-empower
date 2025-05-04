@@ -1,14 +1,28 @@
+
 import { useState, useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Earth, Trees, Droplet, Wind, AlertCircle, ExternalLink } from "lucide-react";
+import { Earth, Trees, Droplet, Wind } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// OpenLayers imports
+import 'ol/ol.css';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import OSM from 'ol/source/OSM';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import { fromLonLat } from 'ol/proj';
+import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import Overlay from 'ol/Overlay';
+import { Coordinate } from 'ol/coordinate';
 
 // Impact action types
 type ActionType = 'tree-planting' | 'water-conservation' | 'renewable-energy' | 'community-cleanup';
@@ -91,15 +105,14 @@ const initialMarkers: ImpactMarker[] = [
 export function ImpactMap() {
   const { toast } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<Map | null>(null);
+  const popupContainer = useRef<HTMLDivElement>(null);
+  const popupOverlay = useRef<Overlay | null>(null);
   const [markers, setMarkers] = useState<ImpactMarker[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState<string | null>(null);
-  const [tokenInput, setTokenInput] = useState('');
-  const [userToken, setUserToken] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(true);
   const isMobile = useIsMobile();
+  const [selectedMarker, setSelectedMarker] = useState<ImpactMarker | null>(null);
   
   // Total impact calculation
   const totalImpact = markers.reduce(
@@ -150,217 +163,149 @@ export function ImpactMap() {
     }).format(date);
   };
   
-  // Check for saved token on component mount
   useEffect(() => {
-    // Try to get token from localStorage
-    const savedToken = localStorage.getItem('mapbox_token');
-    if (savedToken) {
-      setUserToken(savedToken);
-      setShowTokenInput(false);
-    } else {
-      setShowTokenInput(true);
-    }
-    
     // Load initial markers
     setMarkers(initialMarkers);
   }, []);
   
-  // Initialize map whenever the user token changes
+  // Create vector style for markers
+  const createMarkerStyle = (type: ActionType) => {
+    const color = getMarkerColor(type);
+    return new Style({
+      image: new CircleStyle({
+        radius: 8,
+        fill: new Fill({ color }),
+        stroke: new Stroke({
+          color: '#ffffff',
+          width: 2
+        })
+      })
+    });
+  };
+  
+  // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !userToken) return;
-    
-    // Clear any previous map instance
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
-    }
-    
-    setMapError(null);
+    if (!mapContainer.current || map.current) return;
     
     try {
-      // Set the access token
-      mapboxgl.accessToken = userToken;
-      
-      // Create new map instance
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
-        projection: 'globe',
-        zoom: 1.5,
-        center: [0, 30],
-        pitch: 40,
-      });
-      
-      // Add controls
-      map.current.addControl(
-        new mapboxgl.NavigationControl({
-          visualizePitch: true,
-        }),
-        'top-right'
-      );
-      
-      // Add atmosphere and fog effects
-      map.current.on('style.load', () => {
-        if (!map.current) return;
-        
-        map.current.setFog({
-          color: 'rgb(255, 255, 255)',
-          'high-color': 'rgb(200, 200, 225)',
-          'horizon-blend': 0.2,
+      // Create popup overlay
+      if (popupContainer.current) {
+        popupOverlay.current = new Overlay({
+          element: popupContainer.current,
+          autoPan: true,
+          positioning: 'bottom-center',
+          offset: [0, -10],
         });
-        
-        // Set the map as loaded
-        setMapLoaded(true);
-        
-        // Add markers after style is loaded
-        addMarkersToMap(initialMarkers);
-      });
-      
-      // Error handling
-      map.current.on('error', (e) => {
-        console.error("Mapbox error:", e);
-        setMapError("Failed to initialize map. Please check your Mapbox token.");
-        setMapLoaded(false);
-        setShowTokenInput(true);
-        
-        toast({
-          title: "Map Error",
-          description: "Failed to load map. Please check your Mapbox token.",
-          variant: "destructive"
-        });
-      });
-      
-      // Auto-rotation settings
-      const secondsPerRevolution = 180;
-      const maxSpinZoom = 4;
-      const slowSpinZoom = 3;
-      let userInteracting = false;
-      let spinEnabled = true;
-      
-      // Spin globe function
-      function spinGlobe() {
-        if (!map.current) return;
-        
-        const zoom = map.current.getZoom();
-        if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
-          let distancePerSecond = 360 / secondsPerRevolution;
-          if (zoom > slowSpinZoom) {
-            const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
-            distancePerSecond *= zoomDif;
-          }
-          const center = map.current.getCenter();
-          center.lng -= distancePerSecond / 60;
-          map.current.easeTo({ center, duration: 1000, easing: (n) => n });
-        }
       }
       
-      // Start spinning
-      const spinInterval = setInterval(spinGlobe, 1000);
-      
-      // Add interaction handlers
-      map.current.on('mousedown', () => { userInteracting = true; });
-      map.current.on('dragstart', () => { userInteracting = true; });
-      map.current.on('moveend', () => { 
-        userInteracting = false; 
-        spinGlobe();
+      // Create map instance
+      map.current = new Map({
+        target: mapContainer.current,
+        layers: [
+          new TileLayer({
+            source: new OSM()
+          })
+        ],
+        view: new View({
+          center: fromLonLat([0, 30]),
+          zoom: 2,
+          maxZoom: 18,
+          constrainOnlyCenter: true
+        }),
+        controls: []
       });
-      map.current.on('touchend', () => { 
-        userInteracting = false; 
-        spinGlobe();
+      
+      if (popupOverlay.current) {
+        map.current.addOverlay(popupOverlay.current);
+      }
+      
+      setMapLoaded(true);
+      
+      // Add click event to display popup
+      map.current.on('click', (evt) => {
+        if (!map.current) return;
+        
+        const feature = map.current.forEachFeatureAtPixel(evt.pixel, (feature) => feature);
+        
+        if (feature && feature.get('marker')) {
+          const marker = feature.get('marker');
+          const coordinate = feature.getGeometry().getCoordinates();
+          
+          setSelectedMarker(marker);
+          
+          if (popupOverlay.current) {
+            popupOverlay.current.setPosition(coordinate);
+          }
+        } else {
+          if (popupOverlay.current) {
+            popupOverlay.current.setPosition(undefined);
+          }
+          setSelectedMarker(null);
+        }
       });
       
-      // Return cleanup function
-      return () => {
-        clearInterval(spinInterval);
+      // Auto-rotate the globe (simplified animation for OpenLayers)
+      const rotateInterval = setInterval(() => {
         if (map.current) {
-          map.current.remove();
+          const view = map.current.getView();
+          const center = view.getCenter();
+          if (center) {
+            const [x, y] = center;
+            view.animate({
+              center: [x + 0.5, y],
+              duration: 1000
+            });
+          }
+        }
+      }, 100);
+      
+      return () => {
+        clearInterval(rotateInterval);
+        if (map.current) {
+          map.current.setTarget(undefined);
+          map.current = null;
         }
       };
     } catch (error) {
       console.error("Error initializing map:", error);
-      setMapError("Could not initialize map. Please check your Mapbox token.");
-      setMapLoaded(false);
-      setShowTokenInput(true);
-      
       toast({
         title: "Map Error",
-        description: "Could not initialize map. Please check your Mapbox token.",
+        description: "Could not initialize map.",
         variant: "destructive"
       });
     }
-  }, [userToken, toast]);
+  }, [toast]);
   
   // Add or update markers when filtered markers change
   useEffect(() => {
-    if (mapLoaded && map.current) {
-      // Clear existing markers
-      const existingMarkers = document.querySelectorAll('.mapboxgl-marker');
-      existingMarkers.forEach((marker) => {
-        marker.remove();
-      });
-      
-      // Add filtered markers
-      addMarkersToMap(filteredMarkers);
-    }
-  }, [filteredMarkers, mapLoaded]);
-  
-  // Function to add markers to the map
-  const addMarkersToMap = (markerList: ImpactMarker[]) => {
-    if (!map.current) return;
+    if (!mapLoaded || !map.current) return;
     
-    markerList.forEach(marker => {
-      // Create custom marker element
-      const el = document.createElement('div');
-      el.className = 'marker-element';
-      el.style.width = '24px';
-      el.style.height = '24px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = getMarkerColor(marker.type);
-      el.style.border = '2px solid white';
-      el.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
-      el.style.cursor = 'pointer';
+    // Create vector source and layer for markers
+    const vectorSource = new VectorSource();
+    
+    // Add filtered markers to vector source
+    filteredMarkers.forEach(marker => {
+      const feature = new Feature({
+        geometry: new Point(fromLonLat([marker.lng, marker.lat]))
+      });
       
-      // Create popup
-      const popup = new mapboxgl.Popup({ offset: 25 })
-        .setHTML(`
-          <div class="p-2">
-            <h3 class="font-bold">${marker.title}</h3>
-            <p class="text-sm">${marker.description}</p>
-            <div class="text-xs mt-2">
-              <p>${formatDate(marker.date)} • ${marker.participants} participants</p>
-              ${marker.impact.co2 > 0 ? `<p class="text-green-700">CO2 Saved: ${marker.impact.co2} kg</p>` : ''}
-              ${marker.impact.water > 0 ? `<p class="text-blue-700">Water Saved: ${marker.impact.water} L</p>` : ''}
-            </div>
-          </div>
-        `);
-      
-      // Add marker to map
-      new mapboxgl.Marker(el)
-        .setLngLat([marker.lng, marker.lat])
-        .setPopup(popup)
-        .addTo(map.current!);
+      feature.setStyle(createMarkerStyle(marker.type));
+      feature.set('marker', marker);
+      vectorSource.addFeature(feature);
     });
-  };
-  
-  // Handle token submit
-  const handleTokenSubmit = () => {
-    if (tokenInput.trim()) {
-      // Save token to local storage
-      localStorage.setItem('mapbox_token', tokenInput);
-      setUserToken(tokenInput);
-      
-      toast({
-        title: "Token Updated",
-        description: "Your Mapbox token has been updated. The map will reload.",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Please enter a valid Mapbox token",
-        variant: "destructive"
-      });
-    }
-  };
+    
+    // Remove existing vector layers
+    map.current.getLayers().getArray()
+      .filter(layer => layer instanceof VectorLayer)
+      .forEach(layer => map.current?.removeLayer(layer));
+    
+    // Add new vector layer with markers
+    const vectorLayer = new VectorLayer({
+      source: vectorSource
+    });
+    
+    map.current.addLayer(vectorLayer);
+  }, [filteredMarkers, mapLoaded]);
 
   return (
     <Card className="border-sage-200/20 shadow-lg animate-fade-up">
@@ -375,53 +320,7 @@ export function ImpactMap() {
               Visualize environmental actions around the world
             </CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowTokenInput(!showTokenInput)}
-          >
-            {showTokenInput ? 'Hide Token Input' : 'API Token'}
-          </Button>
         </div>
-        
-        {showTokenInput && (
-          <div className="mt-4 space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-amber-800 dark:text-amber-300">Free Mapbox Token Available</h4>
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Mapbox offers a free tier with 50,000 map views per month. You only need to create a free account - no credit card required.
-                </p>
-                <ol className="text-sm text-amber-700 dark:text-amber-400 mt-2 list-decimal pl-5">
-                  <li>Sign up for a free account at <a 
-                      href="https://account.mapbox.com/auth/signup/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="underline font-medium inline-flex items-center"
-                    >
-                      mapbox.com <ExternalLink className="h-3 w-3 ml-0.5" />
-                    </a>
-                  </li>
-                  <li>After signing up, go to your account dashboard</li>
-                  <li>Find and copy your default public token</li>
-                  <li>Paste it below and click Save</li>
-                </ol>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                placeholder="Enter your Mapbox API token"
-                className="flex-1 px-3 py-2 border border-input rounded-md"
-              />
-              <Button onClick={handleTokenSubmit}>Save</Button>
-            </div>
-          </div>
-        )}
       </CardHeader>
       
       <CardContent>
@@ -473,28 +372,44 @@ export function ImpactMap() {
         </div>
         
         {/* Map container */}
-        <div className={`rounded-lg overflow-hidden border border-border ${isMobile ? 'h-[400px]' : 'h-[500px]'}`}>
-          {!userToken ? (
-            <div className="flex items-center justify-center w-full h-full bg-muted">
-              <div className="text-center p-4">
-                <Earth className="mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-                <h3 className="text-lg font-medium">Map Requires API Token</h3>
-                <p className="text-muted-foreground mb-4">Please enter your Mapbox API token to view the map</p>
-                <Button onClick={() => setShowTokenInput(true)}>Enter API Token</Button>
+        <div className={`rounded-lg overflow-hidden border border-border relative ${isMobile ? 'h-[400px]' : 'h-[500px]'}`}>
+          <div ref={mapContainer} className="w-full h-full" />
+          
+          {/* Popup container */}
+          <div 
+            ref={popupContainer}
+            className="absolute bg-white dark:bg-gray-800 p-3 rounded-md shadow-md border border-border max-w-[250px] z-50"
+            style={{ display: selectedMarker ? 'block' : 'none' }}
+          >
+            {selectedMarker && (
+              <div>
+                <h3 className="font-bold text-sm">{selectedMarker.title}</h3>
+                <p className="text-xs mt-1">{selectedMarker.description}</p>
+                <div className="text-xs mt-2">
+                  <p>{formatDate(selectedMarker.date)} • {selectedMarker.participants} participants</p>
+                  {selectedMarker.impact.co2 > 0 && 
+                    <p className="text-green-700 dark:text-green-500">CO2 Saved: {selectedMarker.impact.co2} kg</p>
+                  }
+                  {selectedMarker.impact.water > 0 && 
+                    <p className="text-blue-700 dark:text-blue-500">Water Saved: {selectedMarker.impact.water} L</p>
+                  }
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="mt-2 text-xs w-full"
+                  onClick={() => {
+                    if (popupOverlay.current) {
+                      popupOverlay.current.setPosition(undefined);
+                    }
+                    setSelectedMarker(null);
+                  }}
+                >
+                  Close
+                </Button>
               </div>
-            </div>
-          ) : mapError ? (
-            <div className="flex items-center justify-center w-full h-full bg-muted">
-              <div className="text-center p-4">
-                <AlertCircle className="mx-auto h-16 w-16 text-destructive opacity-50 mb-4" />
-                <h3 className="text-lg font-medium">Map Error</h3>
-                <p className="text-muted-foreground mb-4">{mapError}</p>
-                <Button onClick={() => setShowTokenInput(true)}>Update API Token</Button>
-              </div>
-            </div>
-          ) : (
-            <div ref={mapContainer} className="w-full h-full" />
-          )}
+            )}
+          </div>
         </div>
         
         {/* Legend */}
