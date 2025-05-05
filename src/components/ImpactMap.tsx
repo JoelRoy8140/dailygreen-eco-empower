@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -229,12 +228,15 @@ export function ImpactMap() {
         
         if (feature && feature.get('marker')) {
           const marker = feature.get('marker');
-          const coordinate = feature.getGeometry().getCoordinates();
+          const geometry = feature.getGeometry();
+          const coordinate = geometry ? geometry.getCoordinates() : undefined;
           
-          setSelectedMarker(marker);
-          
-          if (popupOverlay.current) {
-            popupOverlay.current.setPosition(coordinate);
+          if (coordinate) {
+            setSelectedMarker(marker);
+            
+            if (popupOverlay.current) {
+              popupOverlay.current.setPosition(coordinate);
+            }
           }
         } else {
           if (popupOverlay.current) {

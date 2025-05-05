@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Guides from "./pages/Guides";
 import Map from "./pages/Map";
+import Community from "./pages/Community";
 import { useEffect } from "react";
 import { checkSupabaseConnection } from "./integrations/supabase/client";
 
@@ -80,7 +82,7 @@ const App = () => (
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/guides" element={<Guides />} />
                 <Route path="/map" element={<Map />} />
-                <Route path="/community" element={<div>Community Coming Soon</div>} />
+                <Route path="/community" element={<Community />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
