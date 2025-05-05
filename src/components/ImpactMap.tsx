@@ -22,6 +22,7 @@ import { fromLonLat } from 'ol/proj';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import Overlay from 'ol/Overlay';
 import { Coordinate } from 'ol/coordinate';
+import Geometry from 'ol/geom/Geometry';
 
 // Impact action types
 type ActionType = 'tree-planting' | 'water-conservation' | 'renewable-energy' | 'community-cleanup';
@@ -229,13 +230,17 @@ export function ImpactMap() {
         if (feature && feature.get('marker')) {
           const marker = feature.get('marker');
           const geometry = feature.getGeometry();
-          const coordinate = geometry ? geometry.getCoordinates() : undefined;
           
-          if (coordinate) {
-            setSelectedMarker(marker);
+          // Check if geometry is a Point geometry with getCoordinates method
+          if (geometry && geometry instanceof Point) {
+            const coordinate = geometry.getCoordinates();
             
-            if (popupOverlay.current) {
-              popupOverlay.current.setPosition(coordinate);
+            if (coordinate) {
+              setSelectedMarker(marker);
+              
+              if (popupOverlay.current) {
+                popupOverlay.current.setPosition(coordinate);
+              }
             }
           }
         } else {
