@@ -11,7 +11,7 @@ export default function Map() {
         </p>
       </header>
       
-      <div className="h-auto">
+      <div className="h-[600px] w-full">
         <ImpactMap />
       </div>
     </div>

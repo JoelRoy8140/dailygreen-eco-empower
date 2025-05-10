@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,7 +200,7 @@ export function ImpactMap() {
       }
       
       // Create map instance
-      map.current = new Map({
+      const mapInstance = new Map({
         target: mapContainer.current,
         layers: [
           new TileLayer({
@@ -209,17 +210,31 @@ export function ImpactMap() {
         view: new View({
           center: fromLonLat([0, 30]),
           zoom: 2,
-          maxZoom: 18,
           constrainOnlyCenter: true
         }),
         controls: []
       });
       
+      map.current = mapInstance;
+      
       if (popupOverlay.current) {
         map.current.addOverlay(popupOverlay.current);
       }
       
-      setMapLoaded(true);
+      // Add markers layer right away
+      const vectorSource = new VectorSource();
+      const vectorLayer = new VectorLayer({
+        source: vectorSource
+      });
+      map.current.addLayer(vectorLayer);
+      
+      // Force map to render
+      setTimeout(() => {
+        if (map.current) {
+          map.current.updateSize();
+        }
+        setMapLoaded(true);
+      }, 100);
       
       // Add click event to display popup
       map.current.on('click', (evt) => {
@@ -251,7 +266,8 @@ export function ImpactMap() {
         }
       });
       
-      // Auto-rotate the globe (simplified animation for OpenLayers)
+      // Simplified auto-rotation (disabled for now to troubleshoot basic rendering)
+      /*
       const rotateInterval = setInterval(() => {
         if (map.current) {
           const view = map.current.getView();
@@ -265,9 +281,11 @@ export function ImpactMap() {
           }
         }
       }, 100);
+      */
       
       return () => {
-        clearInterval(rotateInterval);
+        // Cleanup
+        // clearInterval(rotateInterval);
         if (map.current) {
           map.current.setTarget(undefined);
           map.current = null;
@@ -277,7 +295,7 @@ export function ImpactMap() {
       console.error("Error initializing map:", error);
       toast({
         title: "Map Error",
-        description: "Could not initialize map.",
+        description: "Could not initialize map. Please try refreshing the page.",
         variant: "destructive"
       });
     }
@@ -287,31 +305,38 @@ export function ImpactMap() {
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
-    // Create vector source and layer for markers
-    const vectorSource = new VectorSource();
-    
-    // Add filtered markers to vector source
-    filteredMarkers.forEach(marker => {
-      const feature = new Feature({
-        geometry: new Point(fromLonLat([marker.lng, marker.lat]))
+    try {
+      // Create vector source and layer for markers
+      const vectorSource = new VectorSource();
+      
+      // Add filtered markers to vector source
+      filteredMarkers.forEach(marker => {
+        const feature = new Feature({
+          geometry: new Point(fromLonLat([marker.lng, marker.lat]))
+        });
+        
+        feature.setStyle(createMarkerStyle(marker.type));
+        feature.set('marker', marker);
+        vectorSource.addFeature(feature);
       });
       
-      feature.setStyle(createMarkerStyle(marker.type));
-      feature.set('marker', marker);
-      vectorSource.addFeature(feature);
-    });
-    
-    // Remove existing vector layers
-    map.current.getLayers().getArray()
-      .filter(layer => layer instanceof VectorLayer)
-      .forEach(layer => map.current?.removeLayer(layer));
-    
-    // Add new vector layer with markers
-    const vectorLayer = new VectorLayer({
-      source: vectorSource
-    });
-    
-    map.current.addLayer(vectorLayer);
+      // Remove existing vector layers
+      map.current.getLayers().getArray()
+        .filter(layer => layer instanceof VectorLayer)
+        .forEach(layer => map.current?.removeLayer(layer));
+      
+      // Add new vector layer with markers
+      const vectorLayer = new VectorLayer({
+        source: vectorSource
+      });
+      
+      map.current.addLayer(vectorLayer);
+      
+      // Force map to redraw
+      map.current.updateSize();
+    } catch (error) {
+      console.error("Error updating markers:", error);
+    }
   }, [filteredMarkers, mapLoaded]);
 
   return (
@@ -379,8 +404,15 @@ export function ImpactMap() {
         </div>
         
         {/* Map container */}
-        <div className={`rounded-lg overflow-hidden border border-border relative ${isMobile ? 'h-[400px]' : 'h-[500px]'}`}>
-          <div ref={mapContainer} className="w-full h-full" />
+        <div 
+          className={`rounded-lg overflow-hidden border border-border relative ${isMobile ? 'h-[400px]' : 'h-[500px]'}`}
+          style={{ position: 'relative', width: '100%' }}
+        >
+          <div 
+            ref={mapContainer} 
+            className="w-full h-full" 
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          />
           
           {/* Popup container */}
           <div 
