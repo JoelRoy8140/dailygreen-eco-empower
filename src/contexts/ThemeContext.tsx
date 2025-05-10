@@ -46,13 +46,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     loadUserTheme();
   }, [user]);
 
-  // Default to system preference if no user preference set
+  // Always default to light mode instead of checking system preference
   useEffect(() => {
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
-    if (!user && systemPrefersDark) {
-      setThemeState("dark");
-      document.documentElement.className = "dark";
+    if (!user) {
+      setThemeState("light");
+      document.documentElement.className = "light";
     }
   }, [user]);
 
