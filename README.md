@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/4f1c55a0-f354-45e4-82ea-eae57a08f35b
+**URL**: https://dailygreen-eco-empower.vercel.app/
 
 ## How can I edit this code?
 
